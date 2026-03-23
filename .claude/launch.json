@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "scorebook",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "serve.cmd"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where npm:*)",
+      "Bash(where node:*)",
+      "Bash(where npx:*)",
+      "Bash(where powershell:*)",
+      "Bash(where php:*)",
+      "Bash(where ruby:*)",
+      "Bash(where dotnet:*)",
+      "Bash(dotnet --version)",
+      "Bash(powershell -Command \"Get-Command npm,node,npx -ErrorAction SilentlyContinue | Select-Object Name,Source\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique\\) -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Stop-Process -Id \\(Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique\\) -Force -ErrorAction SilentlyContinue\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:56502/)"
+    ]
+  }
+}

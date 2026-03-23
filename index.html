@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Scorebook</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top toolbar -->
+    <header class="toolbar">
+        <h1>Baseball Scorebook</h1>
+        <div class="toolbar-actions">
+            <button id="btn-new-game" title="New Game">New Game</button>
+            <button id="btn-add-inning" title="Add Extra Inning">+ Inning</button>
+            <button id="btn-save" title="Save Game">Save</button>
+            <label class="file-load-label" title="Load Game">
+                Load
+                <input type="file" id="btn-load" accept=".json" hidden>
+            </label>
+        </div>
+    </header>
+
+    <main class="scorebook">
+        <!-- Away Team -->
+        <section class="team-section" id="away-section">
+            <div class="team-header">
+                <span class="team-label">VISITORS</span>
+                <input type="text" class="team-name-input" id="away-team-name" placeholder="Team Name" value="">
+            </div>
+            <div class="scorebook-grid" id="away-grid">
+                <!-- Header row -->
+                <div class="grid-header-row">
+                    <div class="cell cell-number header-cell">#</div>
+                    <div class="cell cell-player header-cell">Player</div>
+                    <div class="cell cell-pos header-cell">Pos</div>
+                    <div class="cell cell-inning header-cell" data-inning="1">1</div>
+                    <div class="cell cell-inning header-cell" data-inning="2">2</div>
+                    <div class="cell cell-inning header-cell" data-inning="3">3</div>
+                    <div class="cell cell-inning header-cell" data-inning="4">4</div>
+                    <div class="cell cell-inning header-cell" data-inning="5">5</div>
+                    <div class="cell cell-inning header-cell" data-inning="6">6</div>
+                    <div class="cell cell-inning header-cell" data-inning="7">7</div>
+                    <div class="cell cell-inning header-cell" data-inning="8">8</div>
+                    <div class="cell cell-inning header-cell" data-inning="9">9</div>
+                    <div class="cell cell-stat header-cell">AB</div>
+                    <div class="cell cell-stat header-cell">R</div>
+                    <div class="cell cell-stat header-cell">H</div>
+                    <div class="cell cell-stat header-cell">RBI</div>
+                    <div class="cell cell-stat header-cell">BB</div>
+                    <div class="cell cell-stat header-cell">SO</div>
+                </div>
+                <!-- Player rows rendered by JS -->
+            </div>
+            <!-- Inning totals row -->
+            <div class="totals-row" id="away-totals"></div>
+            <!-- Pitching section (shows opposing team's pitchers) -->
+            <div class="pitcher-section" id="away-pitchers">
+                <div class="pitcher-section-header">
+                    <span class="pitcher-section-label">Pitching</span>
+                    <button class="btn-change-pitcher" id="btn-change-pitcher-home" title="Change Pitcher">+ Pitcher</button>
+                </div>
+                <div class="pitcher-rows" id="away-pitcher-rows"></div>
+            </div>
+        </section>
+
+        <!-- Linescore (compact R-H-E between teams) -->
+        <div class="linescore-divider">
+            <table class="linescore-table" id="linescore-table">
+                <thead>
+                    <tr id="linescore-header"></tr>
+                </thead>
+                <tbody>
+                    <tr id="linescore-away"></tr>
+                    <tr id="linescore-home"></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Home Team -->
+        <section class="team-section" id="home-section">
+            <div class="team-header">
+                <span class="team-label">HOME</span>
+                <input type="text" class="team-name-input" id="home-team-name" placeholder="Team Name" value="">
+            </div>
+            <div class="scorebook-grid" id="home-grid">
+                <div class="grid-header-row">
+                    <div class="cell cell-number header-cell">#</div>
+                    <div class="cell cell-player header-cell">Player</div>
+                    <div class="cell cell-pos header-cell">Pos</div>
+                    <div class="cell cell-inning header-cell" data-inning="1">1</div>
+                    <div class="cell cell-inning header-cell" data-inning="2">2</div>
+                    <div class="cell cell-inning header-cell" data-inning="3">3</div>
+                    <div class="cell cell-inning header-cell" data-inning="4">4</div>
+                    <div class="cell cell-inning header-cell" data-inning="5">5</div>
+                    <div class="cell cell-inning header-cell" data-inning="6">6</div>
+                    <div class="cell cell-inning header-cell" data-inning="7">7</div>
+                    <div class="cell cell-inning header-cell" data-inning="8">8</div>
+                    <div class="cell cell-inning header-cell" data-inning="9">9</div>
+                    <div class="cell cell-stat header-cell">AB</div>
+                    <div class="cell cell-stat header-cell">R</div>
+                    <div class="cell cell-stat header-cell">H</div>
+                    <div class="cell cell-stat header-cell">RBI</div>
+                    <div class="cell cell-stat header-cell">BB</div>
+                    <div class="cell cell-stat header-cell">SO</div>
+                </div>
+            </div>
+            <div class="totals-row" id="home-totals"></div>
+            <!-- Pitching section (shows opposing team's pitchers) -->
+            <div class="pitcher-section" id="home-pitchers">
+                <div class="pitcher-section-header">
+                    <span class="pitcher-section-label">Pitching</span>
+                    <button class="btn-change-pitcher" id="btn-change-pitcher-away" title="Change Pitcher">+ Pitcher</button>
+                </div>
+                <div class="pitcher-rows" id="home-pitcher-rows"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Play Entry Modal -->
+    <div class="modal-overlay" id="play-modal" hidden>
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">Record Play</span>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- ======== COMBINED LAYOUT: Pitch + Result side by side ======== -->
+                <div id="pitch-phase"><!-- kept for JS references -->
+                <div id="result-phase"><!-- kept for JS references -->
+                <div class="combined-play-layout">
+                    <!-- LEFT COLUMN: Pitch Chart -->
+                    <div class="combined-left-col">
+                        <div class="pitch-header-row">
+                            <div class="batter-hand-toggle">
+                                <span class="pitch-label">Batter:</span>
+                                <button class="hand-btn active" data-hand="R">R</button>
+                                <button class="hand-btn" data-hand="L">L</button>
+                            </div>
+                            <div class="pitch-count-display">
+                                <span class="count-balls" id="count-balls">0</span>
+                                <span class="count-sep">-</span>
+                                <span class="count-strikes" id="count-strikes">0</span>
+                            </div>
+                        </div>
+
+                        <div class="pitch-zone-and-controls">
+                            <div class="strike-zone-container" id="strike-zone-container"></div>
+                            <div class="pitch-controls">
+                                <div class="pitch-selected-zone" id="pitch-selected-zone">Click a zone</div>
+                                <fieldset class="play-group pitch-group">
+                                    <legend>Pitch Type</legend>
+                                    <div class="pitch-type-buttons" id="pitch-type-buttons">
+                                        <button class="pitch-type-btn active" data-type="FB">FB</button>
+                                        <button class="pitch-type-btn" data-type="BB">BB</button>
+                                        <button class="pitch-type-btn" data-type="CH">CH</button>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="play-group pitch-group">
+                                    <legend>Outcome</legend>
+                                    <div class="pitch-outcome-buttons" id="pitch-outcome-buttons">
+                                        <button class="pitch-outcome-btn strike-btn" data-outcome="CS" title="Called Strike">CS</button>
+                                        <button class="pitch-outcome-btn strike-btn" data-outcome="SS" title="Swinging Strike">SS</button>
+                                        <button class="pitch-outcome-btn foul-btn" data-outcome="F" title="Foul Ball">Foul</button>
+                                        <button class="pitch-outcome-btn ball-btn" data-outcome="B" title="Ball">Ball</button>
+                                        <button class="pitch-outcome-btn inplay-btn" data-outcome="IP" title="In Play">In Play</button>
+                                        <button class="pitch-outcome-btn hbp-btn" data-outcome="HBP" title="Hit By Pitch">HBP</button>
+                                    </div>
+                                </fieldset>
+                                <button class="btn-undo-pitch" id="btn-undo-pitch" title="Undo last pitch">Undo Last</button>
+                            </div>
+                        </div>
+
+                        <div class="pitch-log" id="pitch-log">
+                            <div class="pitch-log-empty">No pitches recorded</div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Spray/Result -->
+                    <div class="combined-right-col">
+                    <div class="result-phase-layout">
+                        <!-- LEFT COLUMN: Diamond/Spray + Bases/Out/RBI -->
+                        <div class="result-left-column">
+                            <div class="modal-diamond-preview" id="modal-diamond-preview"></div>
+
+                            <div class="spray-controls-compact">
+                                <span class="spray-hint">Click diamond to place hit, drag up for fly ball, down for grounder</span>
+                                <button class="spray-clear-btn" id="spray-clear" title="Clear spray chart">&times;</button>
+                            </div>
+
+                            <div class="left-meta-section">
+                                <div class="base-toggles-compact">
+                                    <label class="base-toggle-sm"><input type="checkbox" id="base-1st"> 1st</label>
+                                    <label class="base-toggle-sm"><input type="checkbox" id="base-2nd"> 2nd</label>
+                                    <label class="base-toggle-sm"><input type="checkbox" id="base-3rd"> 3rd</label>
+                                    <label class="base-toggle-sm scored-toggle"><input type="checkbox" id="base-home"> Scored</label>
+                                </div>
+                                <div class="out-rbi-compact">
+                                    <div class="out-compact">
+                                        <span class="compact-label">Out</span>
+                                        <button class="out-num-btn-sm" data-out="0">—</button>
+                                        <button class="out-num-btn-sm" data-out="1">1</button>
+                                        <button class="out-num-btn-sm" data-out="2">2</button>
+                                        <button class="out-num-btn-sm" data-out="3">3</button>
+                                    </div>
+                                    <div class="rbi-compact">
+                                        <span class="compact-label">RBI</span>
+                                        <button class="rbi-btn-sm" id="rbi-minus">−</button>
+                                        <span class="rbi-display-sm" id="rbi-display">0</span>
+                                        <button class="rbi-btn-sm" id="rbi-plus">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: Result buttons + Fielders + Notes -->
+                        <div class="result-right-column">
+                            <div class="result-groups-compact" id="play-result-buttons">
+                                <div class="result-row">
+                                    <span class="result-row-label">Hits</span>
+                                    <button class="play-btn hit-btn" data-result="1B">1B</button>
+                                    <button class="play-btn hit-btn" data-result="2B">2B</button>
+                                    <button class="play-btn hit-btn" data-result="3B">3B</button>
+                                    <button class="play-btn hit-btn" data-result="HR">HR</button>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-row-label">Free</span>
+                                    <button class="play-btn walk-btn" data-result="BB">BB</button>
+                                    <button class="play-btn walk-btn" data-result="HBP">HBP</button>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-row-label">Outs</span>
+                                    <div class="out-btn-with-options">
+                                        <button class="play-btn out-btn" data-result="K">K</button>
+                                        <label class="out-sub-option" title="Backward K (called strikeout)">
+                                            <input type="checkbox" id="opt-backward-k" class="out-sub-check"> &#75;&#x0338;
+                                        </label>
+                                    </div>
+                                    <div class="out-btn-with-options">
+                                        <button class="play-btn out-btn" data-result="GO">GO</button>
+                                        <label class="out-sub-option" title="Sacrifice Bunt">
+                                            <input type="checkbox" id="opt-sac-bunt" class="out-sub-check"> SAC
+                                        </label>
+                                    </div>
+                                    <div class="out-btn-with-options">
+                                        <button class="play-btn out-btn" data-result="FO">FO</button>
+                                        <label class="out-sub-option" title="Line Out (replaces FO)">
+                                            <input type="checkbox" id="opt-line-out" class="out-sub-check"> LO
+                                        </label>
+                                        <label class="out-sub-option" title="Sacrifice Fly">
+                                            <input type="checkbox" id="opt-sac-fly" class="out-sub-check"> SF
+                                        </label>
+                                    </div>
+                                    <button class="play-btn out-btn" data-result="DP">DP</button>
+                                    <button class="play-btn out-btn" data-result="TP">TP</button>
+                                </div>
+                                <div class="result-row">
+                                    <span class="result-row-label">Other</span>
+                                    <button class="play-btn special-btn" data-result="E">E</button>
+                                    <button class="play-btn special-btn" data-result="FC">FC</button>
+                                </div>
+                            </div>
+
+                            <div class="fielder-section-compact">
+                                <div class="fielder-field-diagram-compact" id="fielder-buttons">
+                                    <div class="field-row field-outfield">
+                                        <button class="fielder-btn" data-pos="7">7<br><small>LF</small></button>
+                                        <button class="fielder-btn" data-pos="8">8<br><small>CF</small></button>
+                                        <button class="fielder-btn" data-pos="9">9<br><small>RF</small></button>
+                                    </div>
+                                    <div class="field-row field-infield">
+                                        <button class="fielder-btn" data-pos="5">5<br><small>3B</small></button>
+                                        <button class="fielder-btn" data-pos="6">6<br><small>SS</small></button>
+                                        <button class="fielder-btn" data-pos="4">4<br><small>2B</small></button>
+                                        <button class="fielder-btn" data-pos="3">3<br><small>1B</small></button>
+                                    </div>
+                                    <div class="field-row field-battery">
+                                        <button class="fielder-btn" data-pos="1">1<br><small>P</small></button>
+                                        <button class="fielder-btn" data-pos="2">2<br><small>C</small></button>
+                                    </div>
+                                </div>
+                                <div class="fielder-notation">
+                                    <span class="notation-display" id="fielder-notation-display"></span>
+                                    <button class="notation-clear-btn" id="clear-fielders" title="Clear fielder notation">&times;</button>
+                                </div>
+                            </div>
+
+                            <input type="text" class="notes-input-compact" id="play-notes" placeholder="Notes...">
+                        </div>
+                    </div>
+                    </div><!-- /combined-right-col -->
+                </div><!-- /combined-play-layout -->
+                </div><!-- /result-phase -->
+                </div><!-- /pitch-phase -->
+            </div>
+            <div class="modal-footer" id="result-phase-footer">
+                <button class="btn-clear-play" id="btn-clear-play">Clear Play</button>
+                <div>
+                    <button class="btn-cancel" id="btn-cancel-play">Cancel</button>
+                    <button class="btn-save-play" id="btn-save-play">Save Play</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Runner Advancement Modal -->
+    <div class="modal-overlay" id="runner-modal" hidden>
+        <div class="modal modal-runner">
+            <div class="modal-header">
+                <span class="modal-title" id="runner-modal-title">Runner Advancement</span>
+            </div>
+            <div class="modal-body">
+                <p class="runner-modal-desc">What happened to the baserunners on this play?</p>
+                <div class="runner-rows" id="runner-rows">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div></div>
+                <button class="btn-save-play" id="btn-confirm-runners">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Lightbox -->
+    <div class="chart-lightbox" id="chart-lightbox" hidden>
+        <div class="chart-lightbox-content" id="chart-lightbox-content"></div>
+    </div>
+
+    <!-- Base Advance Popup -->
+    <div class="base-advance-popup" id="base-advance-popup" hidden>
+        <div class="base-advance-title" id="base-advance-title">Advance to 1st</div>
+        <!-- Reached Base options (context-aware, shown for batter reaching base) -->
+        <div class="base-adv-reached" id="base-adv-reached" style="display:none">
+            <div class="base-adv-section-label" style="color:var(--walk-color)">Reached Base</div>
+            <div class="base-advance-options">
+                <button class="base-adv-btn base-adv-reached-btn" data-reached="HBP" data-out="false">HBP<span>Hit By Pitch</span></button>
+                <button class="base-adv-btn base-adv-reached-btn" data-reached="D3S" data-out="false">D3S<span>Dropped 3rd Strike</span></button>
+                <button class="base-adv-btn base-adv-reached-btn" data-reached="CI" data-out="false">CI<span>Catcher Interference</span></button>
+                <button class="base-adv-btn base-adv-reached-btn" data-reached="E" data-out="false">E<span>Reached on Error</span></button>
+            </div>
+        </div>
+        <div class="base-adv-section-label">Safe</div>
+        <div class="base-advance-options">
+            <button class="base-adv-btn" data-reason="SB" data-out="false">SB<span>Stolen Base</span></button>
+            <button class="base-adv-btn" data-reason="WP" data-out="false">WP<span>Wild Pitch</span></button>
+            <button class="base-adv-btn" data-reason="PB" data-out="false">PB<span>Passed Ball</span></button>
+            <button class="base-adv-btn" data-reason="BK" data-out="false">BK<span>Balk</span></button>
+            <button class="base-adv-btn" data-reason="E" data-out="false">E<span>Error</span></button>
+            <button class="base-adv-btn" data-reason="FC" data-out="false">FC<span>Fielder's Choice</span></button>
+            <button class="base-adv-btn" data-reason="DI" data-out="false">DI<span>Defensive Indiff.</span></button>
+            <button class="base-adv-btn" data-reason="ADV" data-out="false">ADV<span>Adv. on Throw</span></button>
+        </div>
+        <div class="base-adv-section-label base-adv-section-out">Out</div>
+        <div class="base-advance-options">
+            <button class="base-adv-btn base-adv-out" data-reason="CS" data-out="true">CS<span>Caught Stealing</span></button>
+            <button class="base-adv-btn base-adv-out" data-reason="PO" data-out="true">PO<span>Picked Off</span></button>
+            <button class="base-adv-btn base-adv-out" data-reason="TOB" data-out="true">TOB<span>Thrown Out</span></button>
+            <button class="base-adv-btn base-adv-out" data-reason="TODB" data-out="true">TODB<span>Failed to Tag</span></button>
+            <button class="base-adv-btn base-adv-out" data-reason="RD" data-out="true">RD<span>Rundown</span></button>
+        </div>
+        <!-- Fielder notation step (shown after selecting an out reason) -->
+        <div class="base-adv-fielders" id="base-adv-fielders" hidden>
+            <div class="base-adv-section-label base-adv-section-out">Who made the play?</div>
+            <div class="base-adv-fielder-grid">
+                <button class="base-adv-pos-btn" data-pos="1">1<span>P</span></button>
+                <button class="base-adv-pos-btn" data-pos="2">2<span>C</span></button>
+                <button class="base-adv-pos-btn" data-pos="3">3<span>1B</span></button>
+                <button class="base-adv-pos-btn" data-pos="4">4<span>2B</span></button>
+                <button class="base-adv-pos-btn" data-pos="5">5<span>3B</span></button>
+                <button class="base-adv-pos-btn" data-pos="6">6<span>SS</span></button>
+                <button class="base-adv-pos-btn" data-pos="7">7<span>LF</span></button>
+                <button class="base-adv-pos-btn" data-pos="8">8<span>CF</span></button>
+                <button class="base-adv-pos-btn" data-pos="9">9<span>RF</span></button>
+            </div>
+            <div class="base-adv-notation-row">
+                <span class="base-adv-notation-display" id="base-adv-notation-display"></span>
+                <button class="base-adv-notation-clear" id="base-adv-notation-clear">&times;</button>
+            </div>
+            <div class="base-adv-dp-toggle">
+                <button class="base-adv-dp-btn" id="base-adv-dp" data-tag="DP">DP</button>
+                <button class="base-adv-dp-btn" id="base-adv-tp" data-tag="TP">TP</button>
+            </div>
+            <button class="base-adv-confirm" id="base-adv-confirm">Confirm</button>
+        </div>
+        <button class="base-adv-cancel" id="base-advance-cancel">Cancel</button>
+    </div>
+
+    <!-- Quick Out Popup -->
+    <div class="quick-out-popup" id="quick-out-popup" hidden>
+        <div class="quick-out-title">Record Out</div>
+        <div class="quick-out-options">
+            <button class="quick-out-btn" data-out-type="K">K</button>
+            <button class="quick-out-btn" data-out-type="KL">Kꓘ</button>
+            <button class="quick-out-btn" data-out-type="GO">GO</button>
+            <button class="quick-out-btn" data-out-type="FO">FO</button>
+            <button class="quick-out-btn" data-out-type="LO">LO</button>
+        </div>
+        <div class="quick-out-fielders" id="quick-out-fielders" hidden>
+            <div class="quick-out-section-label">Fielder(s)</div>
+            <div class="quick-out-fielder-grid">
+                <button class="quick-out-pos-btn" data-pos="7">7<span>LF</span></button>
+                <button class="quick-out-pos-btn" data-pos="8">8<span>CF</span></button>
+                <button class="quick-out-pos-btn" data-pos="9">9<span>RF</span></button>
+                <button class="quick-out-pos-btn" data-pos="5">5<span>3B</span></button>
+                <button class="quick-out-pos-btn" data-pos="6">6<span>SS</span></button>
+                <button class="quick-out-pos-btn" data-pos="4">4<span>2B</span></button>
+                <button class="quick-out-pos-btn" data-pos="3">3<span>1B</span></button>
+                <button class="quick-out-pos-btn" data-pos="1">1<span>P</span></button>
+                <button class="quick-out-pos-btn" data-pos="2">2<span>C</span></button>
+            </div>
+            <div class="quick-out-notation-row">
+                <span class="quick-out-notation" id="quick-out-notation"></span>
+                <button class="quick-out-notation-clear" id="quick-out-notation-clear">&times;</button>
+            </div>
+            <button class="quick-out-confirm" id="quick-out-confirm">Confirm</button>
+        </div>
+        <button class="quick-out-cancel" id="quick-out-cancel">Cancel</button>
+    </div>
+
+    <!-- New Game Dialog -->
+    <div class="modal-overlay" id="new-game-modal" hidden>
+        <div class="modal modal-new-game">
+            <div class="modal-header">
+                <span class="modal-title">New Game</span>
+            </div>
+            <div class="modal-body">
+                <div class="new-game-teams">
+                    <div class="new-game-team">
+                        <h3>Visitors</h3>
+                        <input type="text" id="new-away-name" placeholder="Team Name" class="team-input">
+                        <div class="lineup-inputs" id="new-away-lineup"></div>
+                    </div>
+                    <div class="new-game-team">
+                        <h3>Home</h3>
+                        <input type="text" id="new-home-name" placeholder="Team Name" class="team-input">
+                        <div class="lineup-inputs" id="new-home-lineup"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-new">Cancel</button>
+                <button class="btn-save-play" id="btn-start-game">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="diamond.js"></script>
+    <script src="scoring.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
