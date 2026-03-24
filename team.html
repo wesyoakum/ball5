@@ -26,48 +26,54 @@
 
         <input type="text" class="team-name-editable" id="team-name" placeholder="Team Name">
 
-        <!-- Roster -->
-        <h2 class="team-section-title">Roster</h2>
-        <table class="roster-table" id="roster-table">
-            <thead>
-                <tr>
-                    <th class="col-num">#</th>
-                    <th class="col-fname">First</th>
-                    <th class="col-lname">Last</th>
-                    <th class="col-pos">Pos</th>
-                    <th class="col-action"></th>
-                </tr>
-            </thead>
-            <tbody id="roster-body"></tbody>
-        </table>
-        <button class="btn-add-row" id="btn-add-roster">+ Add Player</button>
+        <div class="team-columns">
+            <!-- Left: Roster -->
+            <div class="team-col-roster">
+                <h2 class="team-section-title">Roster</h2>
+                <table class="roster-table" id="roster-table">
+                    <thead>
+                        <tr>
+                            <th class="col-num">#</th>
+                            <th class="col-fname">First</th>
+                            <th class="col-lname">Last</th>
+                            <th class="col-pos">Pos</th>
+                            <th class="col-action"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="roster-body"></tbody>
+                </table>
+                <button class="btn-add-row" id="btn-add-roster">+ Add Player</button>
+                <p class="roster-hint">Click a player to add to lineup. Drag to reorder lineup.</p>
+            </div>
 
-        <!-- Lineup Builder -->
-        <h2 class="team-section-title">Lineup Builder</h2>
-        <p style="font-size:0.8rem; color:var(--ink-light); margin-bottom:8px;">Drag players into the batting order, or click to add. Drag to reorder.</p>
-        <div class="lineup-drag-area">
-            <div class="lineup-available" id="lineup-available"></div>
-            <div class="lineup-card">
-                <div class="lineup-card-header">
-                    <span class="lineup-card-hdr-order"></span>
-                    <span class="lineup-card-hdr-num">#</span>
-                    <span class="lineup-card-hdr-name">Player</span>
-                    <span class="lineup-card-hdr-pos">Pos</span>
-                    <span class="lineup-card-hdr-action"></span>
+            <!-- Right: Lineup Card -->
+            <div class="team-col-lineup">
+                <h2 class="team-section-title">Line-Up</h2>
+                <div class="lineup-card">
+                    <div class="lineup-card-header">
+                        <span class="lineup-card-hdr-order"></span>
+                        <span class="lineup-card-hdr-num">#</span>
+                        <span class="lineup-card-hdr-name">Player</span>
+                        <span class="lineup-card-hdr-pos">Pos</span>
+                        <span class="lineup-card-hdr-action"></span>
+                    </div>
+                    <div class="lineup-builder" id="lineup-builder"></div>
                 </div>
-                <div class="lineup-builder" id="lineup-builder"></div>
+                <div class="lineup-actions">
+                    <button class="btn-save-lineup" id="btn-save-lineup">Save Lineup</button>
+                    <button class="btn-use-lineup" id="btn-use-away">Use as Visitors</button>
+                    <button class="btn-use-lineup" id="btn-use-home">Use as Home</button>
+                </div>
             </div>
         </div>
-        <div class="lineup-actions">
-            <button class="btn-save-lineup" id="btn-save-lineup">Save Lineup</button>
-            <button class="btn-use-lineup" id="btn-use-away">Use as Visitors</button>
-            <button class="btn-use-lineup" id="btn-use-home">Use as Home</button>
-            <button class="btn-secondary" id="btn-delete-team">Delete Team</button>
-        </div>
 
-        <!-- Saved Lineups -->
+        <!-- Saved Lineups (full width below) -->
         <h2 class="team-section-title">Saved Lineups</h2>
         <div class="saved-lineups-list" id="saved-lineups"></div>
+
+        <div style="margin-top:20px; border-top:1px solid var(--grid-line-light); padding-top:12px;">
+            <button class="btn-secondary" id="btn-delete-team">Delete Team</button>
+        </div>
     </div>
 
     <script src="storage.js"></script>
@@ -194,12 +200,26 @@
 
             tbody.onclick = (e) => {
                 const btn = e.target.closest('.btn-remove-row');
-                if (!btn) return;
-                const idx = parseInt(btn.dataset.idx);
-                team.roster.splice(idx, 1);
-                save();
-                renderRoster();
-                renderLineup();
+                if (btn) {
+                    const idx = parseInt(btn.dataset.idx);
+                    team.roster.splice(idx, 1);
+                    save();
+                    renderRoster();
+                    renderLineup();
+                    return;
+                }
+                // Click row to add player to lineup (if not clicking an input)
+                if (e.target.tagName === 'INPUT') return;
+                const tr = e.target.closest('tr');
+                if (!tr) return;
+                const idx = parseInt(tr.querySelector('input')?.dataset.idx);
+                if (isNaN(idx)) return;
+                const rp = team.roster[idx];
+                if (!rp || !rp.name) return;
+                // Don't add if already in lineup
+                const lineupNames = new Set(lineup.filter(p => p.name).map(p => p.name));
+                if (lineupNames.has(rp.name)) return;
+                addPlayerToLineup(rp);
             };
         }
 
@@ -215,53 +235,32 @@
 
         // ---- Lineup Builder (Drag & Drop) ----
         let dragSrcIdx = null;
-        let dragFromAvailable = false;
-        let dragPlayerName = null;
+
+        function addPlayerToLineup(rosterPlayer) {
+            const rp = rosterPlayer;
+            lineup.push({
+                name: rp.name,
+                number: rp.number || '',
+                position: rp.positions && rp.positions.length === 1 ? rp.positions[0] : ''
+            });
+            renderLineup();
+            renderRoster(); // update dimming
+        }
 
         function renderLineup() {
             const container = $('#lineup-builder');
-            const available = $('#lineup-available');
             container.innerHTML = '';
-            available.innerHTML = '';
 
-            // Available roster players (not yet in lineup)
+            // Dim roster rows for players already in lineup
             const lineupNames = new Set(lineup.filter(p => p.name).map(p => p.name));
-            const availablePlayers = team.roster.filter(p => p.name && !lineupNames.has(p.name));
-
-            for (const p of availablePlayers) {
-                const chip = document.createElement('div');
-                chip.className = 'lineup-chip';
-                chip.innerHTML = (p.number ? '<span class="chip-num">' + p.number + '</span> ' : '') + (p.firstName || p.name);
-                chip.draggable = true;
-                chip.dataset.name = p.name;
-                chip.addEventListener('dragstart', (e) => {
-                    dragFromAvailable = true;
-                    dragPlayerName = p.name;
-                    dragSrcIdx = null;
-                    e.dataTransfer.effectAllowed = 'move';
-                    chip.classList.add('dragging');
-                });
-                chip.addEventListener('dragend', () => {
-                    chip.classList.remove('dragging');
-                    dragFromAvailable = false;
-                    dragPlayerName = null;
-                });
-                // Click to add to end of lineup
-                chip.addEventListener('click', () => {
-                    const rp = team.roster.find(r => r.name === p.name);
-                    lineup.push({
-                        name: p.name,
-                        number: rp ? rp.number || '' : '',
-                        position: rp && rp.positions && rp.positions.length === 1 ? rp.positions[0] : ''
-                    });
-                    renderLineup();
-                });
-                available.appendChild(chip);
-            }
-
-            if (availablePlayers.length === 0 && team.roster.length > 0) {
-                available.innerHTML = '<span style="font-size:0.8rem;color:var(--ink-light);font-style:italic;">All roster players in lineup</span>';
-            }
+            document.querySelectorAll('#roster-body tr').forEach(tr => {
+                const nameInput = tr.querySelector('input[data-field="firstName"]');
+                const lastInput = tr.querySelector('input[data-field="lastName"]');
+                if (nameInput && lastInput) {
+                    const fullName = (nameInput.value + ' ' + lastInput.value).trim();
+                    tr.classList.toggle('in-lineup', lineupNames.has(fullName));
+                }
+            });
 
             // Lineup slots
             for (let i = 0; i < lineup.length; i++) {
@@ -273,8 +272,6 @@
                 // Drag to reorder
                 slot.addEventListener('dragstart', (e) => {
                     dragSrcIdx = i;
-                    dragFromAvailable = false;
-                    dragPlayerName = null;
                     e.dataTransfer.effectAllowed = 'move';
                     slot.classList.add('dragging');
                 });
@@ -293,19 +290,7 @@
                 slot.addEventListener('drop', (e) => {
                     e.preventDefault();
                     slot.classList.remove('drag-over');
-
-                    if (dragFromAvailable && dragPlayerName) {
-                        // Drop from available roster into this position
-                        const rp = team.roster.find(r => r.name === dragPlayerName);
-                        const newPlayer = {
-                            name: dragPlayerName,
-                            number: rp ? rp.number || '' : '',
-                            position: rp && rp.positions && rp.positions.length === 1 ? rp.positions[0] : ''
-                        };
-                        lineup.splice(i, 0, newPlayer);
-                        renderLineup();
-                    } else if (dragSrcIdx !== null && dragSrcIdx !== i) {
-                        // Reorder within lineup
+                    if (dragSrcIdx !== null && dragSrcIdx !== i) {
                         const moved = lineup.splice(dragSrcIdx, 1)[0];
                         lineup.splice(i, 0, moved);
                         renderLineup();
@@ -358,23 +343,6 @@
                 container.appendChild(slot);
             }
 
-            // Allow dropping at the end of the lineup
-            container.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-            container.addEventListener('drop', (e) => {
-                if (e.target !== container) return;
-                e.preventDefault();
-                if (dragFromAvailable && dragPlayerName) {
-                    const rp = team.roster.find(r => r.name === dragPlayerName);
-                    lineup.push({
-                        name: dragPlayerName,
-                        number: rp ? rp.number || '' : '',
-                        position: rp && rp.positions && rp.positions.length === 1 ? rp.positions[0] : ''
-                    });
-                    renderLineup();
-                }
-            });
         }
 
         // ---- Save Lineup ----
