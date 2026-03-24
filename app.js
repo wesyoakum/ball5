@@ -1795,12 +1795,12 @@
             pitchSelectedZone.textContent = inZone ? 'In Zone' : 'Outside Zone';
             pitchSelectedZone.style.borderColor = 'var(--header-bg)';
         } else {
-            pitchSelectedZone.textContent = 'Click to place pitch';
+            pitchSelectedZone.textContent = 'Location optional';
             pitchSelectedZone.style.borderColor = '';
         }
-        // Enable/disable outcome buttons based on location selection
+        // Outcome buttons always enabled — location is optional
         pitchOutcomeButtons.forEach(btn => {
-            btn.disabled = !hasLocation;
+            btn.disabled = false;
         });
     }
 
@@ -2016,16 +2016,20 @@
     }
 
     function logPitch(outcome) {
-        if (editState.currentPitchX == null) return;
-
+        // Location is optional — record without coordinates if none selected
+        const hasLocation = editState.currentPitchX != null;
         const pitch = {
             number: editState.pitches.length + 1,
-            pitchX: editState.currentPitchX,
-            pitchY: editState.currentPitchY,
-            zone: Scoring.isPitchInStrikeZone(editState.currentPitchX, editState.currentPitchY) ? 'strike' : 'ball',
+            pitchX: hasLocation ? editState.currentPitchX : null,
+            pitchY: hasLocation ? editState.currentPitchY : null,
+            zone: hasLocation
+                ? (Scoring.isPitchInStrikeZone(editState.currentPitchX, editState.currentPitchY) ? 'strike' : 'ball')
+                : (outcome === 'B' ? 'ball' : 'strike'),
             type: editState.currentPitchType,
             outcome,
-            missedCall: Scoring.isMissedCall(null, outcome, editState.currentPitchX, editState.currentPitchY)
+            missedCall: hasLocation
+                ? Scoring.isMissedCall(null, outcome, editState.currentPitchX, editState.currentPitchY)
+                : false
         };
 
         editState.pitches.push(pitch);
