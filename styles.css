@@ -2774,8 +2774,11 @@ body {
 
 .page-container {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    margin: 16px auto;
+    padding: 20px 24px;
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line);
+    box-shadow: 2px 2px 8px var(--shadow);
 }
 
 .page-title {
@@ -2793,24 +2796,27 @@ body {
    ============================================================ */
 
 .teams-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
     margin-top: 16px;
 }
 
 .team-card {
-    background: var(--paper-bg);
-    border: 1px solid var(--grid-line);
-    border-radius: 6px;
-    padding: 16px;
+    background: var(--paper-bg-alt);
+    border: none;
+    border-bottom: 1px solid var(--grid-line);
+    border-radius: 0;
+    padding: 12px 16px;
     cursor: pointer;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    transition: background 0.15s;
+}
+
+.team-card:first-child {
+    border-top: 1px solid var(--grid-line);
 }
 
 .team-card:hover {
-    box-shadow: 0 3px 10px var(--shadow);
-    border-color: var(--grid-line-heavy);
+    background: var(--btn-hover);
 }
 
 .team-card-name {
@@ -2828,19 +2834,21 @@ body {
 
 .btn-add-team {
     display: inline-block;
-    padding: 8px 20px;
-    background: var(--header-bg);
-    color: var(--header-text);
-    border: none;
-    border-radius: 4px;
-    font-family: var(--font-ui);
-    font-size: 0.9rem;
+    padding: 6px 16px;
+    background: none;
+    color: var(--ink-light);
+    border: 1px dashed var(--grid-line);
+    border-radius: 0;
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 .btn-add-team:hover {
-    background: #4a6a4a;
+    color: var(--ink-color);
+    border-color: var(--grid-line-heavy);
 }
 
 /* ============================================================
@@ -3029,23 +3037,28 @@ body {
 }
 
 .btn-save-lineup {
-    background: var(--header-bg);
-    color: var(--header-text);
-    border: none;
+    background: var(--paper-bg-alt);
+    color: var(--ink-color);
+    border: 1px solid var(--grid-line);
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
 }
 
 .btn-save-lineup:hover {
-    background: #4a6a4a;
+    background: var(--btn-hover);
+    border-color: var(--grid-line-heavy);
 }
 
 .btn-use-lineup {
-    background: var(--walk-color);
-    color: white;
-    border: none;
+    background: var(--paper-bg-alt);
+    color: var(--walk-color);
+    border: 1px solid var(--walk-color);
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
 }
 
 .btn-use-lineup:hover {
-    background: #3a5a9a;
+    background: #e8eef8;
 }
 
 .btn-secondary {
@@ -3121,29 +3134,26 @@ body {
 }
 
 .stats-page-tab {
-    padding: 8px 24px;
-    font-family: var(--font-ui);
-    font-size: 0.9rem;
-    font-weight: 500;
-    border: 1px solid var(--grid-line-light);
-    border-bottom: none;
-    border-radius: 4px 4px 0 0;
-    background: var(--paper-bg-alt);
+    padding: 6px 20px;
+    font-family: var(--font-handwriting);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
     cursor: pointer;
     color: var(--ink-light);
-    transition: background 0.15s;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 .stats-page-tab.active {
-    background: var(--paper-bg);
     color: var(--ink-color);
-    border-color: var(--grid-line-heavy);
-    font-weight: 600;
-    position: relative;
-    top: 1px;
+    border-bottom-color: var(--grid-line-heavy);
+    font-weight: 700;
 }
 
 .stats-page-tab:hover:not(.active) {
-    background: var(--btn-hover);
+    color: var(--ink-color);
 }
 }

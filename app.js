@@ -2266,14 +2266,18 @@
     // Save Roster buttons
     // ---- Add Player to Lineup ----
     $('#btn-add-player-away').addEventListener('click', () => {
+        const scrollY = window.scrollY;
         game.awayTeam.players.push({ name: '', number: '', position: '' });
         persistCurrentGame();
         renderAll();
+        window.scrollTo(0, scrollY);
     });
     $('#btn-add-player-home').addEventListener('click', () => {
+        const scrollY = window.scrollY;
         game.homeTeam.players.push({ name: '', number: '', position: '' });
         persistCurrentGame();
         renderAll();
+        window.scrollTo(0, scrollY);
     });
 
     // ---- Add Extra Inning ----
