@@ -2299,21 +2299,24 @@
         updateLinescore();
     });
 
-    // Save Roster buttons
     // ---- Add Player to Lineup ----
-    $('#btn-add-player-away').addEventListener('click', () => {
-        const scrollY = window.scrollY;
-        game.awayTeam.players.push({ name: '', number: '', position: '' });
+    function addPlayerToTeam(side) {
+        const teamData = side === 'away' ? game.awayTeam : game.homeTeam;
+        teamData.players.push({ name: '', number: '', position: '' });
         persistCurrentGame();
-        renderAll();
-        window.scrollTo(0, scrollY);
+        // Only re-render the affected grid, not both
+        const gridEl = side === 'away' ? awayGrid : homeGrid;
+        const teamKey = side;
+        renderGrid(gridEl, teamKey, teamData);
+    }
+
+    $('#btn-add-player-away').addEventListener('click', (e) => {
+        e.stopPropagation();
+        addPlayerToTeam('away');
     });
-    $('#btn-add-player-home').addEventListener('click', () => {
-        const scrollY = window.scrollY;
-        game.homeTeam.players.push({ name: '', number: '', position: '' });
-        persistCurrentGame();
-        renderAll();
-        window.scrollTo(0, scrollY);
+    $('#btn-add-player-home').addEventListener('click', (e) => {
+        e.stopPropagation();
+        addPlayerToTeam('home');
     });
 
     // ---- Add Extra Inning ----
