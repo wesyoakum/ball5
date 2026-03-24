@@ -66,6 +66,8 @@
     let persistTimer = null;
     let readOnlyMode = false;
 
+    let teamSaveTimer = null;
+
     function persistCurrentGame() {
         if (readOnlyMode) return;
         clearTimeout(persistTimer);
@@ -74,6 +76,13 @@
                 console.warn('Auto-save failed:', err);
             });
         }, 300);
+
+        // Auto-save teams (debounced separately, less frequent)
+        clearTimeout(teamSaveTimer);
+        teamSaveTimer = setTimeout(() => {
+            if (game.awayTeam.name) saveTeamToStorage(game.awayTeam).catch(() => {});
+            if (game.homeTeam.name) saveTeamToStorage(game.homeTeam).catch(() => {});
+        }, 2000);
     }
 
     // ---- Team/Player Datalist Helpers ----
@@ -215,7 +224,8 @@
         const existingRows = gridEl.querySelectorAll('.grid-player-row');
         existingRows.forEach(r => r.remove());
 
-        for (let p = 0; p < PLAYER_COUNT; p++) {
+        const playerCount = teamData.players.length;
+        for (let p = 0; p < playerCount; p++) {
             const player = teamData.players[p];
             const row = document.createElement('div');
             row.className = 'grid-player-row';
@@ -458,7 +468,8 @@
         const atBatMap = new Map(Object.entries(game.atBats));
 
         for (let inn = 1; inn <= game.innings; inn++) {
-            const t = Scoring.calcInningTotals(atBatMap, teamKey, inn, PLAYER_COUNT);
+            const td = teamKey === 'away' ? game.awayTeam : game.homeTeam;
+            const t = Scoring.calcInningTotals(atBatMap, teamKey, inn, td.players.length);
             const cell = document.createElement('div');
             cell.className = 'cell cell-inning';
             cell.setAttribute('data-inning', inn);
@@ -514,19 +525,21 @@
             headerRow.appendChild(th);
 
             // Away
-            const awayT = Scoring.calcInningTotals(atBatMap, 'away', inn, PLAYER_COUNT);
+            const awayPC = game.awayTeam.players.length;
+            const awayT = Scoring.calcInningTotals(atBatMap, 'away', inn, awayPC);
             const awayTd = document.createElement('td');
             let awayHasPlays = false;
-            for (let p = 0; p < PLAYER_COUNT; p++) {
+            for (let p = 0; p < awayPC; p++) {
                 if (game.atBats[`away-${p}-${inn}`]) { awayHasPlays = true; break; }
             }
             awayTd.textContent = awayHasPlays ? awayT.r : '';
             awayRow.appendChild(awayTd);
 
             // Home
-            const homeT = Scoring.calcInningTotals(atBatMap, 'home', inn, PLAYER_COUNT);
+            const homePC = game.homeTeam.players.length;
+            const homeT = Scoring.calcInningTotals(atBatMap, 'home', inn, homePC);
             let homeHasPlays = false;
-            for (let p = 0; p < PLAYER_COUNT; p++) {
+            for (let p = 0; p < homePC; p++) {
                 if (game.atBats[`home-${p}-${inn}`]) { homeHasPlays = true; break; }
             }
             const homeTd = document.createElement('td');
@@ -837,9 +850,10 @@
         };
 
         // Check for runners on base
+        const editTeamData = editState.team === 'away' ? game.awayTeam : game.homeTeam;
         const runners = Scoring.getBaseRunners(
             game.atBats, editState.team, editState.inning,
-            editState.playerIdx, PLAYER_COUNT
+            editState.playerIdx, editTeamData.players.length
         );
 
         const anyRunners = runners.first !== null || runners.second !== null || runners.third !== null;
@@ -1038,8 +1052,9 @@
         };
 
         // Check for existing runners
+        const qaTeamData = team === 'away' ? game.awayTeam : game.homeTeam;
         const runners = Scoring.getBaseRunners(
-            game.atBats, team, inning, playerIdx, PLAYER_COUNT
+            game.atBats, team, inning, playerIdx, qaTeamData.players.length
         );
         const anyRunners = runners.first !== null || runners.second !== null || runners.third !== null;
 
@@ -1223,7 +1238,9 @@
      */
     function countOutsInInning(team, inning) {
         let outs = 0;
-        for (let p = 0; p < PLAYER_COUNT; p++) {
+        const teamData = team === 'away' ? game.awayTeam : game.homeTeam;
+        const pc = teamData.players.length;
+        for (let p = 0; p < pc; p++) {
             const ab = getAtBat(team, p, inning);
             if (!ab) continue;
             // Count plate appearance outs
@@ -1347,7 +1364,8 @@
 
         // Handle runner advancement for plays that put batter on base
         if (reached !== 'D3S') {
-            const runners = Scoring.getBaseRunners(game.atBats, team, inning, playerIdx, PLAYER_COUNT);
+            const baTeamData = team === 'away' ? game.awayTeam : game.homeTeam;
+            const runners = Scoring.getBaseRunners(game.atBats, team, inning, playerIdx, baTeamData.players.length);
             const anyRunners = runners.first !== null || runners.second !== null || runners.third !== null;
             if (anyRunners) {
                 const { advancements, ambiguousRunners } = Scoring.resolveRunnerAdvancements(ab.result, runners);
@@ -2246,13 +2264,16 @@
     });
 
     // Save Roster buttons
-    $('#btn-save-roster-away').addEventListener('click', async () => {
-        await saveTeamToStorage(game.awayTeam);
-        await populateTeamDatalist();
+    // ---- Add Player to Lineup ----
+    $('#btn-add-player-away').addEventListener('click', () => {
+        game.awayTeam.players.push({ name: '', number: '', position: '' });
+        persistCurrentGame();
+        renderAll();
     });
-    $('#btn-save-roster-home').addEventListener('click', async () => {
-        await saveTeamToStorage(game.homeTeam);
-        await populateTeamDatalist();
+    $('#btn-add-player-home').addEventListener('click', () => {
+        game.homeTeam.players.push({ name: '', number: '', position: '' });
+        persistCurrentGame();
+        renderAll();
     });
 
     // ---- Add Extra Inning ----

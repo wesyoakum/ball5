@@ -109,21 +109,37 @@ body {
     border-bottom: 2px solid var(--grid-line-heavy);
 }
 
-.btn-save-roster {
-    padding: 2px 8px;
-    font-family: var(--font-ui);
-    font-size: 0.7rem;
-    border: 1px solid var(--grid-line);
-    border-radius: 3px;
-    background: white;
-    color: var(--ink-light);
-    cursor: pointer;
-    transition: background 0.15s;
-    white-space: nowrap;
+/* Hide datalist dropdown arrow to match handwritten aesthetic */
+.team-name-input::-webkit-calendar-picker-indicator,
+.player-name-input::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none;
 }
 
-.btn-save-roster:hover {
-    background: var(--btn-hover);
+.team-name-input,
+.player-name-input {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.btn-add-player {
+    display: block;
+    width: 100%;
+    padding: 3px 0;
+    font-family: var(--font-handwriting);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    background: none;
+    border: none;
+    border-top: 1px dashed var(--grid-line-light);
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.15s;
+}
+
+.btn-add-player:hover {
     color: var(--ink-color);
 }
 
