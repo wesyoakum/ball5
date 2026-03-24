@@ -2705,9 +2705,12 @@ body {
 }
 
 .site-nav-logo {
-    height: 36px;
+    height: 56px;
     width: auto;
     flex-shrink: 0;
+    position: relative;
+    top: 8px;
+    z-index: 101;
 }
 
 .site-nav-links {
