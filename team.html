@@ -32,7 +32,8 @@
             <thead>
                 <tr>
                     <th class="col-num">#</th>
-                    <th class="col-name">Name</th>
+                    <th class="col-fname">First</th>
+                    <th class="col-lname">Last</th>
                     <th class="col-pos">Pos</th>
                     <th class="col-action"></th>
                 </tr>
@@ -43,10 +44,19 @@
 
         <!-- Lineup Builder -->
         <h2 class="team-section-title">Lineup Builder</h2>
-        <p style="font-size:0.8rem; color:var(--ink-light); margin-bottom:8px;">Drag players from the roster into the batting order. Drag to reorder.</p>
+        <p style="font-size:0.8rem; color:var(--ink-light); margin-bottom:8px;">Drag players into the batting order, or click to add. Drag to reorder.</p>
         <div class="lineup-drag-area">
             <div class="lineup-available" id="lineup-available"></div>
-            <div class="lineup-builder" id="lineup-builder"></div>
+            <div class="lineup-card">
+                <div class="lineup-card-header">
+                    <span class="lineup-card-hdr-order"></span>
+                    <span class="lineup-card-hdr-num">#</span>
+                    <span class="lineup-card-hdr-name">Player</span>
+                    <span class="lineup-card-hdr-pos">Pos</span>
+                    <span class="lineup-card-hdr-action"></span>
+                </div>
+                <div class="lineup-builder" id="lineup-builder"></div>
+            </div>
         </div>
         <div class="lineup-actions">
             <button class="btn-save-lineup" id="btn-save-lineup">Save Lineup</button>
@@ -87,17 +97,40 @@
         if (!team.lineups) team.lineups = [];
         if (!team.players) team.players = [];
 
+        // Migrate roster: if roster entries have 'name' but no 'firstName', split them
+        for (const p of team.roster) {
+            if (p.name && !p.firstName) {
+                const parts = p.name.trim().split(/\s+/);
+                p.firstName = parts[0] || '';
+                p.lastName = parts.slice(1).join(' ') || '';
+            }
+            if (!p.firstName) p.firstName = '';
+            if (!p.lastName) p.lastName = '';
+            if (!p.positions) p.positions = [];
+        }
+
         // If roster is empty but players exist, seed roster from players
         if (team.roster.length === 0 && team.players.length > 0) {
             team.roster = team.players
                 .filter(p => p.name && p.name.trim())
-                .map(p => ({ name: p.name, number: p.number || '', positions: p.position ? [p.position] : [] }));
+                .map(p => {
+                    const parts = (p.name || '').trim().split(/\s+/);
+                    return {
+                        firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '',
+                        name: p.name, number: p.number || '', positions: p.position ? [p.position] : []
+                    };
+                });
+        }
+
+        // Helper: display name from roster entry
+        function rosterDisplayName(p) {
+            return (p.firstName || '') + (p.lastName ? ' ' + p.lastName : '');
         }
 
         // Lineup state (working lineup, not yet saved)
         let lineup = team.players.length > 0
             ? team.players.map(p => ({ name: p.name || '', number: p.number || '', position: p.position || '' }))
-            : Array.from({ length: 9 }, () => ({ name: '', number: '', position: '' }));
+            : [];
 
         const teamNameInput = $('#team-name');
         teamNameInput.value = team.name || '';
@@ -111,6 +144,10 @@
 
         async function save() {
             team.updatedAt = new Date().toISOString();
+            // Keep roster name field in sync with firstName/lastName
+            for (const p of team.roster) {
+                p.name = rosterDisplayName(p);
+            }
             // Keep players in sync with current lineup
             team.players = lineup.map(p => ({ name: p.name, number: p.number, position: p.position }));
             await Storage.put('teams', teamId, team);
@@ -125,7 +162,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="col-num"><input type="text" value="${p.number || ''}" placeholder="#" maxlength="3" data-idx="${i}" data-field="number"></td>
-                    <td class="col-name"><input type="text" value="${p.name || ''}" placeholder="Player name" data-idx="${i}" data-field="name"></td>
+                    <td class="col-fname"><input type="text" value="${p.firstName || ''}" placeholder="First" data-idx="${i}" data-field="firstName"></td>
+                    <td class="col-lname"><input type="text" value="${p.lastName || ''}" placeholder="Last" data-idx="${i}" data-field="lastName"></td>
                     <td class="col-pos"><input type="text" value="${(p.positions || []).join('/')}" placeholder="Pos" data-idx="${i}" data-field="positions"></td>
                     <td class="col-action"><button class="btn-remove-row" data-idx="${i}">&times;</button></td>
                 `;
@@ -143,11 +181,15 @@
                     input.value = input.value.toUpperCase();
                 } else if (field === 'number') {
                     team.roster[idx].number = input.value;
-                } else if (field === 'name') {
-                    team.roster[idx].name = input.value;
+                } else if (field === 'firstName') {
+                    team.roster[idx].firstName = input.value;
+                    team.roster[idx].name = rosterDisplayName(team.roster[idx]);
+                } else if (field === 'lastName') {
+                    team.roster[idx].lastName = input.value;
+                    team.roster[idx].name = rosterDisplayName(team.roster[idx]);
                 }
                 save();
-                renderLineup(); // update lineup dropdowns
+                renderLineup();
             };
 
             tbody.onclick = (e) => {
@@ -162,12 +204,12 @@
         }
 
         $('#btn-add-roster').addEventListener('click', () => {
-            team.roster.push({ name: '', number: '', positions: [] });
+            team.roster.push({ firstName: '', lastName: '', name: '', number: '', positions: [] });
             save();
             renderRoster();
             renderLineup();
             // Focus the new name input
-            const inputs = document.querySelectorAll('#roster-body input[data-field="name"]');
+            const inputs = document.querySelectorAll('#roster-body input[data-field="firstName"]');
             if (inputs.length) inputs[inputs.length - 1].focus();
         });
 
@@ -189,7 +231,7 @@
             for (const p of availablePlayers) {
                 const chip = document.createElement('div');
                 chip.className = 'lineup-chip';
-                chip.textContent = p.name;
+                chip.innerHTML = (p.number ? '<span class="chip-num">' + p.number + '</span> ' : '') + (p.firstName || p.name);
                 chip.draggable = true;
                 chip.dataset.name = p.name;
                 chip.addEventListener('dragstart', (e) => {
@@ -274,10 +316,19 @@
                 order.className = 'lineup-slot-order';
                 order.textContent = i + 1;
 
+                // Show # from roster
+                const numSpan = document.createElement('span');
+                numSpan.className = 'lineup-slot-num';
+                numSpan.textContent = lineup[i].number || '';
+
+                // Show first name (or full name if no firstName in roster)
+                const rp = team.roster.find(r => r.name === lineup[i].name);
+                const displayName = rp ? (rp.firstName || rp.name) : (lineup[i].name || '');
+
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'lineup-slot-name';
-                nameSpan.textContent = lineup[i].name || '(empty)';
-                if (!lineup[i].name) nameSpan.style.color = 'var(--grid-line-light)';
+                nameSpan.textContent = displayName || '(empty)';
+                if (!displayName) nameSpan.style.color = 'var(--grid-line-light)';
 
                 const posInput = document.createElement('input');
                 posInput.className = 'lineup-slot-pos';
@@ -300,6 +351,7 @@
                 });
 
                 slot.appendChild(order);
+                slot.appendChild(numSpan);
                 slot.appendChild(nameSpan);
                 slot.appendChild(posInput);
                 slot.appendChild(removeBtn);

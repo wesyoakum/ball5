@@ -2930,10 +2930,11 @@ body {
     font-weight: 400;
 }
 
-.roster-table .col-num { width: 60px; }
-.roster-table .col-name { width: auto; }
-.roster-table .col-pos { width: 80px; }
-.roster-table .col-action { width: 40px; text-align: center; }
+.roster-table .col-num { width: 50px; }
+.roster-table .col-fname { width: auto; }
+.roster-table .col-lname { width: auto; }
+.roster-table .col-pos { width: 70px; }
+.roster-table .col-action { width: 30px; text-align: center; }
 
 .btn-remove-row {
     background: none;
@@ -3011,10 +3012,35 @@ body {
     opacity: 0.4;
 }
 
+.lineup-card {
+    border: 1px solid var(--grid-line);
+    background: var(--paper-bg);
+}
+
+.lineup-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--paper-bg-alt);
+    border-bottom: 2px solid var(--grid-line-heavy);
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink-light);
+}
+
+.lineup-card-hdr-order { width: 24px; text-align: center; }
+.lineup-card-hdr-num { width: 28px; text-align: center; }
+.lineup-card-hdr-name { flex: 1; }
+.lineup-card-hdr-pos { width: 60px; text-align: center; }
+.lineup-card-hdr-action { width: 24px; }
+
 .lineup-builder {
     display: flex;
     flex-direction: column;
-    gap: 2px;
     min-height: 40px;
 }
 
@@ -3022,13 +3048,14 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 8px;
+    padding: 6px 8px;
     background: var(--paper-bg);
-    border: 1px solid var(--grid-line-light);
-    border-radius: 4px;
+    border: none;
+    border-bottom: 1px solid var(--grid-line-light);
+    border-radius: 0;
     cursor: grab;
     user-select: none;
-    transition: border-color 0.15s, background 0.15s;
+    transition: background 0.15s;
 }
 
 .lineup-slot.dragging {
@@ -3036,8 +3063,17 @@ body {
 }
 
 .lineup-slot.drag-over {
-    border-color: var(--walk-color);
     background: #eef2f8;
+    border-bottom-color: var(--walk-color);
+}
+
+.lineup-slot-num {
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    width: 28px;
+    text-align: center;
 }
 
 .lineup-slot-name {
@@ -3046,6 +3082,13 @@ body {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--ink-color);
+}
+
+.chip-num {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ink-light);
 }
 
 .lineup-slot-order {
