@@ -863,8 +863,8 @@ const Diamond = (() => {
                 dot.setAttribute('width', ds);
                 dot.setAttribute('height', ds);
                 dot.setAttribute('transform', `rotate(45 ${pos.x} ${pos.y})`);
-                dot.setAttribute('fill', INK);
-                dot.setAttribute('fill-opacity', '0.7');
+                dot.setAttribute('fill', '#2a8a2a');
+                dot.setAttribute('fill-opacity', '0.85');
                 dot.style.pointerEvents = 'none';
                 svg.appendChild(dot);
             }

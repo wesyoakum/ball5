@@ -36,7 +36,6 @@
                             <th class="col-num">#</th>
                             <th class="col-fname">First</th>
                             <th class="col-lname">Last</th>
-                            <th class="col-pos">Pos</th>
                             <th class="col-action"></th>
                         </tr>
                     </thead>
@@ -159,7 +158,7 @@
             await Storage.put('teams', teamId, team);
         }
 
-        // ---- Roster ----
+        // ---- Roster (no position column) ----
         function renderRoster() {
             const tbody = $('#roster-body');
             tbody.innerHTML = '';
@@ -170,7 +169,6 @@
                     <td class="col-num"><input type="text" value="${p.number || ''}" placeholder="#" maxlength="3" data-idx="${i}" data-field="number"></td>
                     <td class="col-fname"><input type="text" value="${p.firstName || ''}" placeholder="First" data-idx="${i}" data-field="firstName"></td>
                     <td class="col-lname"><input type="text" value="${p.lastName || ''}" placeholder="Last" data-idx="${i}" data-field="lastName"></td>
-                    <td class="col-pos"><input type="text" value="${(p.positions || []).join('/')}" placeholder="Pos" data-idx="${i}" data-field="positions"></td>
                     <td class="col-action"><button class="btn-remove-row" data-idx="${i}">&times;</button></td>
                 `;
                 tbody.appendChild(tr);
@@ -182,10 +180,7 @@
                 if (!input.dataset.idx) return;
                 const idx = parseInt(input.dataset.idx);
                 const field = input.dataset.field;
-                if (field === 'positions') {
-                    team.roster[idx].positions = input.value.toUpperCase().split('/').map(s => s.trim()).filter(Boolean);
-                    input.value = input.value.toUpperCase();
-                } else if (field === 'number') {
+                if (field === 'number') {
                     team.roster[idx].number = input.value;
                 } else if (field === 'firstName') {
                     team.roster[idx].firstName = input.value;
@@ -360,10 +355,20 @@
 
         // ---- Use in Current Game ----
         async function useLineup(side) {
-            const currentGame = await Storage.get('currentGame', 'current');
+            let currentGame = await Storage.get('currentGame', 'current');
+            // If no current game, create one
             if (!currentGame) {
-                alert('No current game. Start a new game from the Scorebook first.');
-                return;
+                currentGame = {
+                    id: 'game-' + Date.now(),
+                    date: new Date().toISOString().slice(0, 10),
+                    status: 'in-progress',
+                    createdAt: new Date().toISOString(),
+                    completedAt: null,
+                    innings: 9,
+                    awayTeam: { teamId: null, name: '', players: [], pitchers: [{ name: '', startInning: 1, endInning: null }], currentPitcherIdx: 0 },
+                    homeTeam: { teamId: null, name: '', players: [], pitchers: [{ name: '', startInning: 1, endInning: null }], currentPitcherIdx: 0 },
+                    atBats: {}
+                };
             }
             const teamData = side === 'away' ? currentGame.awayTeam : currentGame.homeTeam;
             teamData.teamId = teamId;
@@ -383,7 +388,7 @@
             window.location.href = 'teams.html';
         });
 
-        // ---- Saved Lineups ----
+        // ---- Saved Lineups (show full lineup card) ----
         function renderSavedLineups() {
             const container = $('#saved-lineups');
             if (team.lineups.length === 0) {
@@ -395,16 +400,51 @@
                 const lu = team.lineups[i];
                 const card = document.createElement('div');
                 card.className = 'saved-lineup-card';
-                card.innerHTML = `
+
+                // Header with name, date, actions
+                const header = document.createElement('div');
+                header.className = 'saved-lineup-card-header';
+                header.innerHTML = `
                     <div>
-                        <div class="saved-lineup-card-name">${lu.name}</div>
-                        <div class="saved-lineup-card-date">${lu.date} &middot; ${lu.players.filter(p=>p.name).length} players</div>
+                        <span class="saved-lineup-card-name">${lu.name}</span>
+                        <span class="saved-lineup-card-date">${lu.date}</span>
                     </div>
                     <div class="saved-lineup-card-actions">
                         <button data-action="load" data-idx="${i}">Load</button>
                         <button data-action="delete" data-idx="${i}">Delete</button>
                     </div>
                 `;
+                card.appendChild(header);
+
+                // Full lineup card table
+                const table = document.createElement('div');
+                table.className = 'saved-lineup-table';
+                const hdr = document.createElement('div');
+                hdr.className = 'lineup-card-header';
+                hdr.innerHTML = `
+                    <span class="lineup-card-hdr-order"></span>
+                    <span class="lineup-card-hdr-num">#</span>
+                    <span class="lineup-card-hdr-name">Player</span>
+                    <span class="lineup-card-hdr-pos">Pos</span>
+                `;
+                table.appendChild(hdr);
+
+                for (let j = 0; j < lu.players.length; j++) {
+                    const p = lu.players[j];
+                    if (!p.name) continue;
+                    const rp = team.roster.find(r => r.name === p.name);
+                    const displayName = rp ? (rp.firstName || rp.name) : (p.name || '');
+                    const row = document.createElement('div');
+                    row.className = 'lineup-slot saved-lineup-row';
+                    row.innerHTML = `
+                        <span class="lineup-slot-order">${j + 1}</span>
+                        <span class="lineup-slot-num">${p.number || ''}</span>
+                        <span class="lineup-slot-name">${displayName}</span>
+                        <span class="lineup-slot-pos-display">${p.position || ''}</span>
+                    `;
+                    table.appendChild(row);
+                }
+                card.appendChild(table);
                 container.appendChild(card);
             }
 

@@ -257,6 +257,8 @@ const Storage = (() => {
         pullFromCloud, fullSync, isSyncing,
         cloudEnabled,
         STORES,
+        _workerUrl: WORKER_URL,
+        _apiKey: API_KEY,
         set onSyncChange(fn) { onSyncChange = fn; }
     };
 })();

@@ -2981,12 +2981,13 @@ body {
 }
 
 .team-col-roster {
-    flex: 1 1 350px;
+    flex: 1 1 0;
     min-width: 0;
 }
 
 .team-col-lineup {
-    flex: 0 0 340px;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 @media (max-width: 760px) {
@@ -3190,14 +3191,26 @@ body {
     gap: 6px;
 }
 
+.saved-lineups-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
 .saved-lineup-card {
+    flex: 0 0 320px;
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line-light);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.saved-lineup-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: var(--paper-bg);
-    border: 1px solid var(--grid-line-light);
-    border-radius: 4px;
+    border-bottom: 1px solid var(--grid-line-light);
 }
 
 .saved-lineup-card-name {
@@ -3207,8 +3220,9 @@ body {
 }
 
 .saved-lineup-card-date {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--ink-light);
+    margin-left: 8px;
 }
 
 .saved-lineup-card-actions {
@@ -3224,6 +3238,30 @@ body {
     border-radius: 3px;
     background: white;
     cursor: pointer;
+}
+
+.saved-lineup-table {
+    padding: 0;
+}
+
+.saved-lineup-table .lineup-card-header {
+    border-radius: 0;
+}
+
+.saved-lineup-row {
+    cursor: default;
+}
+
+.saved-lineup-row:hover {
+    background: transparent;
+}
+
+.lineup-slot-pos-display {
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    min-width: 40px;
 }
 
 /* ============================================================

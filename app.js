@@ -70,6 +70,7 @@
 
     function persistCurrentGame() {
         if (readOnlyMode) return;
+        game.updatedAt = new Date().toISOString();
         clearTimeout(persistTimer);
         persistTimer = setTimeout(() => {
             Storage.put('currentGame', 'current', game).catch(err => {
@@ -2700,6 +2701,37 @@
                     renderAll();
                 }
             });
+
+            // ---- Live Collaboration: poll cloud every 5 seconds ----
+            setInterval(async () => {
+                // Only poll if no modal is open (avoid overwriting mid-edit)
+                if (!playModal.hidden || !newGameModal.hidden) return;
+                if (readOnlyMode) return;
+
+                try {
+                    const res = await fetch(Storage._workerUrl + '/kv/currentGame/current', {
+                        headers: { 'X-API-Key': Storage._apiKey }
+                    });
+                    if (!res || !res.ok) return;
+                    const cloudGame = await res.json();
+                    if (!cloudGame || !cloudGame.atBats) return;
+
+                    // Compare: only update if cloud has newer data
+                    const cloudTime = cloudGame.updatedAt || cloudGame.createdAt || '';
+                    const localTime = game.updatedAt || game.createdAt || '';
+                    const cloudAtBatCount = Object.keys(cloudGame.atBats).length;
+                    const localAtBatCount = Object.keys(game.atBats).length;
+
+                    // Update if cloud has more data or newer timestamp
+                    if (cloudTime > localTime || cloudAtBatCount > localAtBatCount) {
+                        game = cloudGame;
+                        await Storage.put('currentGame', 'current', game);
+                        renderAll();
+                    }
+                } catch (e) {
+                    // Silent fail — network issue, no big deal
+                }
+            }, 5000);
         }
     })();
 
