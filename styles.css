@@ -2696,12 +2696,14 @@ body {
     align-items: center;
     background: var(--header-bg);
     color: var(--header-text);
-    padding: 6px 20px;
+    padding: 8px 20px;
     box-shadow: 0 2px 6px var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
     gap: 20px;
+    overflow: visible;
+    height: 44px;
 }
 
 .site-nav-logo {
