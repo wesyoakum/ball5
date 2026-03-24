@@ -303,17 +303,31 @@
                 innCell.setAttribute('data-player', p);
 
                 const ab = getAtBat(teamKey, p, inn);
+                // Compute runners on base before this batter
+                const runners = Scoring.getBaseRunners(
+                    game.atBats, teamKey, inn, p, teamData.players.length
+                );
+                const runnerState = {
+                    first: runners.first !== null,
+                    second: runners.second !== null,
+                    third: runners.third !== null
+                };
+
                 if (ab) {
                     innCell.classList.add('has-play');
                     const container = document.createElement('div');
                     container.className = 'diamond-container';
-                    container.appendChild(Diamond.render(ab));
+                    const svg = Diamond.render(ab);
+                    Diamond.drawRunnerIndicator(svg, runnerState);
+                    container.appendChild(svg);
                     innCell.appendChild(container);
                 } else {
                     // Empty diamond
                     const container = document.createElement('div');
                     container.className = 'diamond-container';
-                    container.appendChild(Diamond.render(null));
+                    const svg = Diamond.render(null);
+                    Diamond.drawRunnerIndicator(svg, runnerState);
+                    container.appendChild(svg);
                     innCell.appendChild(container);
                 }
 

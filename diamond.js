@@ -815,5 +815,61 @@ const Diamond = (() => {
         return svg;
     }
 
-    return { render, renderPreview, renderInteractive, renderCompositeSpray, renderCompositePitchChart, BASES, SPRAY_STYLES, QUICK_LABELS };
+    /**
+     * Draw a mini base-runner indicator in the top-left of the cell.
+     * Shows a tiny rotated diamond with filled bases for occupied ones.
+     * @param {SVGElement} svg
+     * @param {{ first: boolean, second: boolean, third: boolean }} runners
+     */
+    function drawRunnerIndicator(svg, runners) {
+        if (!runners) return;
+        const hasAny = runners.first || runners.second || runners.third;
+        if (!hasAny) return;
+
+        // Mini diamond position: top-left corner
+        const cx = 7, cy = 7;
+        const s = 4; // half-size of mini diamond
+
+        // Base positions for the mini indicator (rotated 45deg square)
+        const miniFirst  = { x: cx + s, y: cy };
+        const miniSecond = { x: cx,     y: cy - s };
+        const miniThird  = { x: cx - s, y: cy };
+        const miniHome   = { x: cx,     y: cy + s };
+
+        // Outline diamond
+        const outline = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        outline.setAttribute('points',
+            `${miniHome.x},${miniHome.y} ${miniFirst.x},${miniFirst.y} ${miniSecond.x},${miniSecond.y} ${miniThird.x},${miniThird.y}`
+        );
+        outline.setAttribute('fill', 'none');
+        outline.setAttribute('stroke', '#7a9a70');
+        outline.setAttribute('stroke-width', '0.4');
+        outline.style.pointerEvents = 'none';
+        svg.appendChild(outline);
+
+        // Fill occupied bases as small diamonds
+        const basePositions = [
+            { key: 'first',  pos: miniFirst },
+            { key: 'second', pos: miniSecond },
+            { key: 'third',  pos: miniThird }
+        ];
+
+        for (const { key, pos } of basePositions) {
+            if (runners[key]) {
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const ds = 2.2;
+                dot.setAttribute('x', pos.x - ds / 2);
+                dot.setAttribute('y', pos.y - ds / 2);
+                dot.setAttribute('width', ds);
+                dot.setAttribute('height', ds);
+                dot.setAttribute('transform', `rotate(45 ${pos.x} ${pos.y})`);
+                dot.setAttribute('fill', INK);
+                dot.setAttribute('fill-opacity', '0.7');
+                dot.style.pointerEvents = 'none';
+                svg.appendChild(dot);
+            }
+        }
+    }
+
+    return { render, renderPreview, renderInteractive, renderCompositeSpray, renderCompositePitchChart, drawRunnerIndicator, BASES, SPRAY_STYLES, QUICK_LABELS };
 })();
