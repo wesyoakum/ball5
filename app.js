@@ -11,14 +11,21 @@
 
     function createEmptyGame() {
         return {
+            id: 'game-' + Date.now(),
+            date: new Date().toISOString().slice(0, 10),
+            status: 'in-progress',
+            createdAt: new Date().toISOString(),
+            completedAt: null,
             innings: 9,
             awayTeam: {
+                teamId: null,
                 name: '',
                 players: createEmptyLineup(),
                 pitchers: [{ name: '', startInning: 1, endInning: null }],
                 currentPitcherIdx: 0
             },
             homeTeam: {
+                teamId: null,
                 name: '',
                 players: createEmptyLineup(),
                 pitchers: [{ name: '', startInning: 1, endInning: null }],
@@ -46,10 +53,26 @@
 
     function setAtBat(team, playerIdx, inning, data) {
         game.atBats[atBatKey(team, playerIdx, inning)] = data;
+        persistCurrentGame();
     }
 
     function clearAtBat(team, playerIdx, inning) {
         delete game.atBats[atBatKey(team, playerIdx, inning)];
+        persistCurrentGame();
+    }
+
+    // ---- Auto-Save (debounced) ----
+    let persistTimer = null;
+    let readOnlyMode = false;
+
+    function persistCurrentGame() {
+        if (readOnlyMode) return;
+        clearTimeout(persistTimer);
+        persistTimer = setTimeout(() => {
+            Storage.put('currentGame', 'current', game).catch(err => {
+                console.warn('Auto-save failed:', err);
+            });
+        }, 300);
     }
 
     // ---- DOM References ----
@@ -157,6 +180,7 @@
             numInput.setAttribute('data-player', p);
             numInput.addEventListener('change', (e) => {
                 teamData.players[p].number = e.target.value;
+                persistCurrentGame();
             });
             numCell.appendChild(numInput);
             row.appendChild(numCell);
@@ -174,6 +198,7 @@
             nameInput.addEventListener('change', (e) => {
                 teamData.players[p].name = e.target.value;
                 updateLinescore();
+                persistCurrentGame();
             });
             nameCell.appendChild(nameInput);
             row.appendChild(nameCell);
@@ -191,6 +216,7 @@
             posInput.addEventListener('change', (e) => {
                 teamData.players[p].position = e.target.value.toUpperCase();
                 e.target.value = e.target.value.toUpperCase();
+                persistCurrentGame();
             });
             posCell.appendChild(posInput);
             row.appendChild(posCell);
@@ -519,6 +545,7 @@
             nameInput.placeholder = `Pitcher ${i + 1}`;
             nameInput.addEventListener('change', () => {
                 pitcher.name = nameInput.value;
+                persistCurrentGame();
             });
             row.appendChild(nameInput);
 
@@ -2141,15 +2168,18 @@
     awayTeamName.addEventListener('input', () => {
         game.awayTeam.name = awayTeamName.value;
         updateLinescore();
+        persistCurrentGame();
     });
     homeTeamName.addEventListener('input', () => {
         game.homeTeam.name = homeTeamName.value;
         updateLinescore();
+        persistCurrentGame();
     });
 
     // ---- Add Extra Inning ----
     $('#btn-add-inning').addEventListener('click', () => {
         game.innings++;
+        persistCurrentGame();
         renderAll();
     });
 
@@ -2170,6 +2200,7 @@
         teamData.pitchers.push({ name, startInning: game.innings, endInning: null });
         teamData.currentPitcherIdx = teamData.pitchers.length - 1;
 
+        persistCurrentGame();
         renderAll();
     }
 
@@ -2202,7 +2233,7 @@
         }
     });
 
-    // ---- Save / Load ----
+    // ---- Export / Import (JSON file) ----
     $('#btn-save').addEventListener('click', () => {
         const data = JSON.stringify(game, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
@@ -2229,6 +2260,11 @@
                 if (loaded.atBats && loaded.awayTeam && loaded.homeTeam) {
                     game = loaded;
                     if (!game.innings) game.innings = 9;
+                    if (!game.id) game.id = 'game-' + Date.now();
+                    if (!game.status) game.status = 'in-progress';
+                    readOnlyMode = false;
+                    document.body.classList.remove('scorebook-readonly');
+                    persistCurrentGame();
                     renderAll();
                 } else {
                     alert('Invalid scorebook file.');
@@ -2241,8 +2277,80 @@
         e.target.value = ''; // reset so same file can be re-loaded
     });
 
+    // ---- Team Persistence Helpers ----
+    async function saveTeamToStorage(teamData) {
+        if (!teamData.name || !teamData.name.trim()) return;
+        const teamId = teamData.teamId || ('team-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
+        teamData.teamId = teamId;
+        await Storage.put('teams', teamId, {
+            id: teamId,
+            name: teamData.name.trim(),
+            players: teamData.players.map(p => ({
+                name: p.name || '', number: p.number || '', position: p.position || ''
+            })),
+            updatedAt: new Date().toISOString()
+        });
+        return teamId;
+    }
+
+    async function archiveCurrentGame() {
+        const hasPlays = Object.keys(game.atBats).length > 0;
+        const hasTeams = game.awayTeam.name || game.homeTeam.name;
+        if (!hasPlays && !hasTeams) return;
+
+        game.status = 'completed';
+        game.completedAt = new Date().toISOString();
+
+        // Save teams
+        if (game.awayTeam.name) await saveTeamToStorage(game.awayTeam);
+        if (game.homeTeam.name) await saveTeamToStorage(game.homeTeam);
+
+        // Archive game
+        await Storage.put('games', game.id, game);
+        // Clear current game slot
+        await Storage.del('currentGame', 'current');
+    }
+
+    // ---- End Game ----
+    $('#btn-end-game').addEventListener('click', async () => {
+        const hasPlays = Object.keys(game.atBats).length > 0;
+        if (!hasPlays) {
+            alert('No plays recorded yet.');
+            return;
+        }
+        if (!confirm('End this game and archive it?')) return;
+
+        await archiveCurrentGame();
+        game = createEmptyGame();
+        readOnlyMode = false;
+        document.body.classList.remove('scorebook-readonly');
+        await Storage.put('currentGame', 'current', game);
+        renderAll();
+    });
+
     // ---- New Game ----
-    $('#btn-new-game').addEventListener('click', () => {
+    $('#btn-new-game').addEventListener('click', async () => {
+        // Clear form inputs from previous use
+        $('#new-away-name').value = '';
+        $('#new-home-name').value = '';
+
+        // Set date to today
+        const dateInput = $('#new-game-date');
+        if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+        // Populate team selects from saved teams
+        const savedTeams = await Storage.getAll('teams');
+        for (const side of ['away', 'home']) {
+            const select = $(`#new-${side}-team-select`);
+            select.innerHTML = '<option value="">-- New Team --</option>';
+            for (const { key, value } of savedTeams) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = value.name;
+                select.appendChild(opt);
+            }
+        }
+
         // Build lineup inputs
         for (const side of ['away', 'home']) {
             const container = $(`#new-${side}-lineup`);
@@ -2260,6 +2368,27 @@
             }
         }
 
+        // Team select change handler: auto-fill lineup
+        for (const side of ['away', 'home']) {
+            const select = $(`#new-${side}-team-select`);
+            select.onchange = async () => {
+                const teamId = select.value;
+                if (!teamId) return;
+                const team = await Storage.get('teams', teamId);
+                if (!team) return;
+                $(`#new-${side}-name`).value = team.name;
+                for (let i = 0; i < PLAYER_COUNT && i < team.players.length; i++) {
+                    const p = team.players[i];
+                    const numInput = $(`input[data-side="${side}"][data-idx="${i}"][data-field="number"]`);
+                    const nameInput = $(`input[data-side="${side}"][data-idx="${i}"][data-field="name"]`);
+                    const posInput = $(`input[data-side="${side}"][data-idx="${i}"][data-field="position"]`);
+                    if (numInput) numInput.value = p.number || '';
+                    if (nameInput) nameInput.value = p.name || '';
+                    if (posInput) posInput.value = p.position || '';
+                }
+            };
+        }
+
         newGameModal.hidden = false;
     });
 
@@ -2267,10 +2396,25 @@
         newGameModal.hidden = true;
     });
 
-    $('#btn-start-game').addEventListener('click', () => {
+    $('#btn-start-game').addEventListener('click', async () => {
+        // Archive current game if it has data
+        const hasPlays = Object.keys(game.atBats).length > 0;
+        const hasTeams = game.awayTeam.name || game.homeTeam.name;
+        if (hasPlays || hasTeams) {
+            await archiveCurrentGame();
+        }
+
         game = createEmptyGame();
+        const dateInput = $('#new-game-date');
+        if (dateInput && dateInput.value) game.date = dateInput.value;
         game.awayTeam.name = $('#new-away-name').value;
         game.homeTeam.name = $('#new-home-name').value;
+
+        // Apply team IDs from selects
+        const awaySelect = $('#new-away-team-select');
+        const homeSelect = $('#new-home-team-select');
+        if (awaySelect.value) game.awayTeam.teamId = awaySelect.value;
+        if (homeSelect.value) game.homeTeam.teamId = homeSelect.value;
 
         // Read lineup inputs
         for (const side of ['away', 'home']) {
@@ -2287,6 +2431,17 @@
             }
         }
 
+        // Save teams if checkbox checked
+        if ($('#save-away-team').checked && game.awayTeam.name) {
+            await saveTeamToStorage(game.awayTeam);
+        }
+        if ($('#save-home-team').checked && game.homeTeam.name) {
+            await saveTeamToStorage(game.homeTeam);
+        }
+
+        readOnlyMode = false;
+        document.body.classList.remove('scorebook-readonly');
+        await Storage.put('currentGame', 'current', game);
         newGameModal.hidden = true;
         renderAll();
     });
@@ -2295,15 +2450,274 @@
         if (e.target === newGameModal) newGameModal.hidden = true;
     });
 
+    // ---- Game History ----
+    const historyModal = $('#history-modal');
+
+    $('#btn-history').addEventListener('click', async () => {
+        const gameList = $('#game-list');
+        gameList.innerHTML = '';
+
+        const allGames = await Storage.getAll('games');
+        if (allGames.length === 0) {
+            gameList.innerHTML = '<p class="stats-empty">No archived games yet.</p>';
+            historyModal.hidden = false;
+            return;
+        }
+
+        // Sort by date descending
+        allGames.sort((a, b) => (b.value.date || '').localeCompare(a.value.date || ''));
+
+        for (const { key, value: g } of allGames) {
+            const score = Stats.calcGameScore(g);
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            card.innerHTML = `
+                <div class="game-card-date">${g.date || 'Unknown date'}</div>
+                <div class="game-card-teams">
+                    <span class="game-card-team ${score.away > score.home ? 'game-card-winner' : ''}">${g.awayTeam.name || 'Visitors'}</span>
+                    <span class="game-card-score">${score.away} - ${score.home}</span>
+                    <span class="game-card-team ${score.home > score.away ? 'game-card-winner' : ''}">${g.homeTeam.name || 'Home'}</span>
+                </div>
+                <div class="game-card-actions">
+                    <button class="game-card-btn game-card-view" data-game-id="${key}">View</button>
+                    <button class="game-card-btn game-card-delete" data-game-id="${key}">Delete</button>
+                </div>
+            `;
+            gameList.appendChild(card);
+        }
+
+        // View handler
+        gameList.addEventListener('click', async (e) => {
+            const viewBtn = e.target.closest('.game-card-view');
+            if (viewBtn) {
+                const id = viewBtn.dataset.gameId;
+                const g = await Storage.get('games', id);
+                if (g) {
+                    game = g;
+                    readOnlyMode = true;
+                    document.body.classList.add('scorebook-readonly');
+                    historyModal.hidden = true;
+                    renderAll();
+                }
+            }
+            const delBtn = e.target.closest('.game-card-delete');
+            if (delBtn) {
+                if (!confirm('Delete this game permanently?')) return;
+                const id = delBtn.dataset.gameId;
+                await Storage.del('games', id);
+                delBtn.closest('.game-card').remove();
+                if (gameList.children.length === 0) {
+                    gameList.innerHTML = '<p class="stats-empty">No archived games yet.</p>';
+                }
+            }
+        });
+
+        historyModal.hidden = false;
+    });
+
+    $('#history-close').addEventListener('click', () => {
+        historyModal.hidden = true;
+    });
+
+    historyModal.addEventListener('click', (e) => {
+        if (e.target === historyModal) historyModal.hidden = true;
+    });
+
+    // ---- Return to current game from read-only ----
+    // Clicking "New Game" or "End Game" while in read-only exits back
+    function exitReadOnlyMode() {
+        if (!readOnlyMode) return;
+        readOnlyMode = false;
+        document.body.classList.remove('scorebook-readonly');
+    }
+
+    // ---- Statistics Modal ----
+    const statsModal = $('#stats-modal');
+    let currentStatsTab = 'batting';
+
+    $('#btn-stats').addEventListener('click', async () => {
+        await refreshStats();
+        statsModal.hidden = false;
+    });
+
+    $('#stats-close').addEventListener('click', () => {
+        statsModal.hidden = true;
+    });
+
+    statsModal.addEventListener('click', (e) => {
+        if (e.target === statsModal) statsModal.hidden = true;
+    });
+
+    // Tab switching
+    $$('.stats-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            currentStatsTab = tab.dataset.tab;
+            $$('.stats-tab').forEach(t => t.classList.toggle('active', t === tab));
+            refreshStats();
+        });
+    });
+
+    $('#stats-refresh').addEventListener('click', () => refreshStats());
+
+    async function refreshStats() {
+        const container = $('#stats-table-container');
+        const allGames = await Storage.getAll('games');
+        const games = allGames.map(g => g.value);
+
+        // Also include current game if it has plays
+        if (Object.keys(game.atBats).length > 0 && game.status !== 'completed') {
+            games.push(game);
+        }
+
+        if (games.length === 0) {
+            container.innerHTML = '<p class="stats-empty">No games recorded yet. Complete and archive games to see season statistics here.</p>';
+            return;
+        }
+
+        // Populate team filter
+        const teamFilter = $('#stats-team-filter');
+        const currentVal = teamFilter.value;
+        const teamNames = Stats.getAllTeamNames(games);
+        teamFilter.innerHTML = '<option value="">All Teams</option>';
+        for (const t of teamNames) {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            if (t === currentVal) opt.selected = true;
+            teamFilter.appendChild(opt);
+        }
+
+        const filters = {};
+        if (teamFilter.value) filters.teamName = teamFilter.value;
+        const dateFrom = $('#stats-date-from').value;
+        const dateTo = $('#stats-date-to').value;
+        if (dateFrom) filters.dateFrom = dateFrom;
+        if (dateTo) filters.dateTo = dateTo;
+
+        if (currentStatsTab === 'batting') {
+            renderBattingStats(container, games, filters);
+        } else if (currentStatsTab === 'pitching') {
+            renderPitchingStats(container, games, filters);
+        } else if (currentStatsTab === 'standings') {
+            renderStandings(container, games, filters);
+        }
+    }
+
+    function renderBattingStats(container, games, filters) {
+        const players = Stats.getAllPlayers(games, filters);
+        if (players.length === 0) {
+            container.innerHTML = '<p class="stats-empty">No batting data for this filter.</p>';
+            return;
+        }
+
+        const rows = players.map(p => ({
+            ...Stats.calcSeasonBatting(games, p.name, filters),
+            name: p.name,
+            teams: p.teams.join(', ')
+        })).filter(r => r.g > 0).sort((a, b) => b.avg - a.avg || b.h - a.h);
+
+        let html = `<table class="stats-table"><thead><tr>
+            <th>Player</th><th>Team</th><th>G</th><th>AB</th><th>R</th><th>H</th>
+            <th>2B</th><th>3B</th><th>HR</th><th>RBI</th><th>BB</th><th>SO</th>
+            <th>SB</th><th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th>
+        </tr></thead><tbody>`;
+
+        for (const r of rows) {
+            html += `<tr>
+                <td class="stats-name">${r.name}</td><td>${r.teams}</td>
+                <td>${r.g}</td><td>${r.ab}</td><td>${r.r}</td><td>${r.h}</td>
+                <td>${r['2b']}</td><td>${r['3b']}</td><td>${r.hr}</td><td>${r.rbi}</td>
+                <td>${r.bb}</td><td>${r.so}</td><td>${r.sb}</td>
+                <td>${Stats.fmtAvg(r.avg)}</td><td>${Stats.fmtAvg(r.obp)}</td>
+                <td>${Stats.fmtAvg(r.slg)}</td><td>${Stats.fmtAvg(r.ops)}</td>
+            </tr>`;
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderPitchingStats(container, games, filters) {
+        const pitchers = Stats.getAllPitchers(games, filters);
+        if (pitchers.length === 0) {
+            container.innerHTML = '<p class="stats-empty">No pitching data for this filter.</p>';
+            return;
+        }
+
+        const rows = pitchers.map(p => ({
+            ...Stats.calcSeasonPitching(games, p.name, filters),
+            name: p.name,
+            teams: p.teams.join(', ')
+        })).filter(r => r.g > 0).sort((a, b) => a.era - b.era);
+
+        let html = `<table class="stats-table"><thead><tr>
+            <th>Pitcher</th><th>Team</th><th>G</th><th>IP</th><th>H</th>
+            <th>R</th><th>ER</th><th>BB</th><th>SO</th><th>HR</th>
+            <th>Pitches</th><th>Strikes</th><th>ERA</th><th>WHIP</th>
+        </tr></thead><tbody>`;
+
+        for (const r of rows) {
+            html += `<tr>
+                <td class="stats-name">${r.name}</td><td>${r.teams}</td>
+                <td>${r.g}</td><td>${r.ip}</td><td>${r.h}</td>
+                <td>${r.r}</td><td>${r.er}</td><td>${r.bb}</td><td>${r.so}</td><td>${r.hr}</td>
+                <td>${r.totalPitches}</td><td>${r.strikes}</td>
+                <td>${Stats.fmtEra(r.era)}</td><td>${r.whip.toFixed(2)}</td>
+            </tr>`;
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderStandings(container, games, filters) {
+        const standings = Stats.calcTeamStandings(games, filters);
+        if (standings.length === 0) {
+            container.innerHTML = '<p class="stats-empty">No completed games for this filter.</p>';
+            return;
+        }
+
+        let html = `<table class="stats-table"><thead><tr>
+            <th>Team</th><th>G</th><th>W</th><th>L</th><th>T</th>
+            <th>PCT</th><th>RS</th><th>RA</th><th>DIFF</th>
+        </tr></thead><tbody>`;
+
+        for (const t of standings) {
+            const pct = t.g > 0 ? (t.w / t.g) : 0;
+            const diff = t.rs - t.ra;
+            html += `<tr>
+                <td class="stats-name">${t.name}</td>
+                <td>${t.g}</td><td>${t.w}</td><td>${t.l}</td><td>${t.t}</td>
+                <td>${Stats.fmtAvg(pct)}</td><td>${t.rs}</td><td>${t.ra}</td>
+                <td class="${diff > 0 ? 'stats-positive' : diff < 0 ? 'stats-negative' : ''}">${diff > 0 ? '+' : ''}${diff}</td>
+            </tr>`;
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
     // ---- Keyboard shortcuts ----
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             if (!playModal.hidden) closePlayModal();
             if (!newGameModal.hidden) newGameModal.hidden = true;
+            if (!statsModal.hidden) statsModal.hidden = true;
+            if (!historyModal.hidden) historyModal.hidden = true;
         }
     });
 
-    // ---- Initial render ----
-    renderAll();
+    // ---- Initialize with persistence ----
+    (async function init() {
+        await Storage.open();
+        const saved = await Storage.get('currentGame', 'current');
+        if (saved && saved.atBats) {
+            game = saved;
+            // Ensure metadata fields exist (for games started before this update)
+            if (!game.id) game.id = 'game-' + Date.now();
+            if (!game.status) game.status = 'in-progress';
+        }
+        renderAll();
+    })();
 
 })();

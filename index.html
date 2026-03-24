@@ -15,10 +15,13 @@
         <h1>Baseball Scorebook</h1>
         <div class="toolbar-actions">
             <button id="btn-new-game" title="New Game">New Game</button>
+            <button id="btn-end-game" title="End Game & Archive">End Game</button>
             <button id="btn-add-inning" title="Add Extra Inning">+ Inning</button>
-            <button id="btn-save" title="Save Game">Save</button>
-            <label class="file-load-label" title="Load Game">
-                Load
+            <button id="btn-stats" title="Season Statistics">Stats</button>
+            <button id="btn-history" title="Game History">History</button>
+            <button id="btn-save" title="Export JSON">Export</button>
+            <label class="file-load-label" title="Import JSON">
+                Import
                 <input type="file" id="btn-load" accept=".json" hidden>
             </label>
         </div>
@@ -428,16 +431,29 @@
                 <span class="modal-title">New Game</span>
             </div>
             <div class="modal-body">
+                <div class="new-game-meta">
+                    <label class="new-game-date-label">Date:
+                        <input type="date" id="new-game-date" class="new-game-date-input">
+                    </label>
+                </div>
                 <div class="new-game-teams">
                     <div class="new-game-team">
                         <h3>Visitors</h3>
+                        <select id="new-away-team-select" class="team-select">
+                            <option value="">-- New Team --</option>
+                        </select>
                         <input type="text" id="new-away-name" placeholder="Team Name" class="team-input">
                         <div class="lineup-inputs" id="new-away-lineup"></div>
+                        <label class="save-team-toggle"><input type="checkbox" id="save-away-team" checked> Save team for reuse</label>
                     </div>
                     <div class="new-game-team">
                         <h3>Home</h3>
+                        <select id="new-home-team-select" class="team-select">
+                            <option value="">-- New Team --</option>
+                        </select>
                         <input type="text" id="new-home-name" placeholder="Team Name" class="team-input">
                         <div class="lineup-inputs" id="new-home-lineup"></div>
+                        <label class="save-team-toggle"><input type="checkbox" id="save-home-team" checked> Save team for reuse</label>
                     </div>
                 </div>
             </div>
@@ -448,8 +464,53 @@
         </div>
     </div>
 
+    <!-- Statistics Modal -->
+    <div class="modal-overlay" id="stats-modal" hidden>
+        <div class="modal modal-stats">
+            <div class="modal-header">
+                <span class="modal-title">Season Statistics</span>
+                <button class="modal-close" id="stats-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-filters">
+                    <select id="stats-team-filter" class="stats-filter-select">
+                        <option value="">All Teams</option>
+                    </select>
+                    <input type="date" id="stats-date-from" class="stats-filter-date" title="From date">
+                    <input type="date" id="stats-date-to" class="stats-filter-date" title="To date">
+                    <button id="stats-refresh" class="stats-refresh-btn">Refresh</button>
+                </div>
+                <div class="stats-tabs">
+                    <button class="stats-tab active" data-tab="batting">Batting</button>
+                    <button class="stats-tab" data-tab="pitching">Pitching</button>
+                    <button class="stats-tab" data-tab="standings">Standings</button>
+                </div>
+                <div class="stats-table-container" id="stats-table-container">
+                    <p class="stats-empty">No games recorded yet. Complete and archive games to see season statistics here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game History Modal -->
+    <div class="modal-overlay" id="history-modal" hidden>
+        <div class="modal modal-history">
+            <div class="modal-header">
+                <span class="modal-title">Game History</span>
+                <button class="modal-close" id="history-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="game-list" id="game-list">
+                    <p class="stats-empty">No archived games yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="storage.js"></script>
     <script src="diamond.js"></script>
     <script src="scoring.js"></script>
+    <script src="stats.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

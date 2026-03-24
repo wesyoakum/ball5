@@ -2279,3 +2279,346 @@ body {
     color: var(--ink-light);
     margin-top: 4px;
 }
+
+/* ============================================================
+   New Game Modal — Team Select & Date
+   ============================================================ */
+
+.new-game-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--grid-line-light);
+}
+
+.new-game-date-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.new-game-date-input {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    background: white;
+}
+
+.team-select {
+    width: 100%;
+    padding: 6px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    background: white;
+    margin-bottom: 6px;
+    cursor: pointer;
+}
+
+.save-team-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    margin-top: 6px;
+    cursor: pointer;
+}
+
+.save-team-toggle input {
+    cursor: pointer;
+}
+
+/* ============================================================
+   Statistics Modal
+   ============================================================ */
+
+.modal-stats {
+    width: 95vw;
+    max-width: 1200px;
+    max-height: 90vh;
+}
+
+.modal-stats .modal-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 60px);
+}
+
+.stats-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.stats-filter-select {
+    padding: 5px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    background: white;
+}
+
+.stats-filter-date {
+    padding: 4px 6px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    background: white;
+}
+
+.stats-refresh-btn {
+    padding: 5px 14px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    background: var(--paper-bg);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.stats-refresh-btn:hover {
+    background: var(--btn-hover);
+}
+
+.stats-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--grid-line-heavy);
+}
+
+.stats-tab {
+    padding: 6px 18px;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid var(--grid-line-light);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    background: var(--paper-bg-alt);
+    cursor: pointer;
+    color: var(--ink-light);
+    transition: background 0.15s;
+}
+
+.stats-tab.active {
+    background: var(--paper-bg);
+    color: var(--ink-color);
+    border-color: var(--grid-line-heavy);
+    font-weight: 600;
+    position: relative;
+    top: 1px;
+}
+
+.stats-tab:hover:not(.active) {
+    background: var(--btn-hover);
+}
+
+.stats-table-container {
+    overflow-x: auto;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+}
+
+.stats-table thead th {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 6px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+.stats-table thead th:first-child {
+    text-align: left;
+}
+
+.stats-table tbody td {
+    padding: 5px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--grid-line-light);
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stats-table tbody tr:hover {
+    background: var(--paper-bg-alt);
+}
+
+.stats-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.stats-name {
+    text-align: left !important;
+    font-family: var(--font-handwriting) !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+}
+
+.stats-positive {
+    color: var(--hit-color);
+}
+
+.stats-negative {
+    color: var(--out-color);
+}
+
+.stats-empty {
+    text-align: center;
+    color: var(--ink-light);
+    font-style: italic;
+    padding: 40px 20px;
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   Game History Modal
+   ============================================================ */
+
+.modal-history {
+    width: 600px;
+    max-width: 95vw;
+    max-height: 90vh;
+}
+
+.modal-history .modal-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 60px);
+}
+
+.game-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.game-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line-light);
+    border-radius: 4px;
+    transition: box-shadow 0.15s;
+}
+
+.game-card:hover {
+    box-shadow: 0 2px 6px var(--shadow);
+}
+
+.game-card-date {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    min-width: 80px;
+}
+
+.game-card-teams {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-handwriting);
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex: 1;
+    justify-content: center;
+}
+
+.game-card-score {
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink-color);
+    padding: 2px 8px;
+    background: var(--paper-bg-alt);
+    border-radius: 3px;
+}
+
+.game-card-winner {
+    color: var(--hit-color);
+}
+
+.game-card-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.game-card-btn {
+    padding: 4px 12px;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 3px;
+    background: white;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.game-card-btn:hover {
+    background: var(--btn-hover);
+}
+
+.game-card-delete {
+    color: var(--out-color);
+    border-color: var(--out-color);
+}
+
+.game-card-delete:hover {
+    background: #fde0e0;
+}
+
+/* ============================================================
+   Read-Only Mode (viewing archived game)
+   ============================================================ */
+
+.scorebook-readonly .player-number-input,
+.scorebook-readonly .player-name-input,
+.scorebook-readonly .player-pos-input,
+.scorebook-readonly .team-name-input,
+.scorebook-readonly .pitcher-name {
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.scorebook-readonly .cell-inning:not(.header-cell) {
+    pointer-events: none;
+}
+
+.scorebook-readonly .btn-change-pitcher,
+.scorebook-readonly #btn-add-inning,
+.scorebook-readonly #btn-end-game {
+    display: none;
+}
+
+.scorebook-readonly .toolbar::after {
+    content: 'VIEWING ARCHIVED GAME';
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 3px 12px;
+    border-radius: 3px;
+    margin-left: 12px;
+}
