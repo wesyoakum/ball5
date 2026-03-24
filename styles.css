@@ -2642,11 +2642,12 @@ body {
 
 .scorebook-readonly .btn-change-pitcher,
 .scorebook-readonly #btn-add-inning,
-.scorebook-readonly #btn-end-game {
+.scorebook-readonly #btn-end-game,
+.scorebook-readonly .btn-add-player {
     display: none;
 }
 
-.scorebook-readonly .toolbar::after {
+.scorebook-readonly .site-nav::after {
     content: 'VIEWING ARCHIVED GAME';
     font-size: 0.7rem;
     font-weight: 600;
@@ -2684,4 +2685,459 @@ body {
 @keyframes sync-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+}
+
+/* ============================================================
+   Shared Nav Bar (all pages)
+   ============================================================ */
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 6px 20px;
+    box-shadow: 0 2px 6px var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 20px;
+}
+
+.site-nav-logo {
+    height: 36px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+.site-nav-links {
+    display: flex;
+    gap: 4px;
+}
+
+.site-nav-links a {
+    color: var(--header-text);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.site-nav-links a:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.site-nav-links a.active {
+    background: rgba(255, 255, 255, 0.25);
+    font-weight: 600;
+}
+
+.site-nav-spacer {
+    flex: 1;
+}
+
+.site-nav-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.site-nav-actions button,
+.site-nav-actions .file-load-label {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--header-text);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 5px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: var(--font-ui);
+    transition: background 0.15s;
+}
+
+.site-nav-actions button:hover,
+.site-nav-actions .file-load-label:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* ============================================================
+   Page Container (shared across non-scorebook pages)
+   ============================================================ */
+
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    font-family: var(--font-handwriting);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink-color);
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--grid-line-heavy);
+    padding-bottom: 8px;
+}
+
+/* ============================================================
+   Teams List Page
+   ============================================================ */
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.team-card {
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line);
+    border-radius: 6px;
+    padding: 16px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.team-card:hover {
+    box-shadow: 0 3px 10px var(--shadow);
+    border-color: var(--grid-line-heavy);
+}
+
+.team-card-name {
+    font-family: var(--font-handwriting);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ink-color);
+    margin-bottom: 6px;
+}
+
+.team-card-info {
+    font-size: 0.8rem;
+    color: var(--ink-light);
+}
+
+.btn-add-team {
+    display: inline-block;
+    padding: 8px 20px;
+    background: var(--header-bg);
+    color: var(--header-text);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-add-team:hover {
+    background: #4a6a4a;
+}
+
+/* ============================================================
+   Single Team Page (Roster + Lineup Builder)
+   ============================================================ */
+
+.team-name-editable {
+    font-family: var(--font-handwriting);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink-color);
+    border: none;
+    border-bottom: 2px dashed var(--grid-line-light);
+    background: transparent;
+    padding: 4px 0;
+    width: 100%;
+    max-width: 400px;
+    outline: none;
+}
+
+.team-name-editable:focus {
+    border-bottom-color: var(--grid-line-heavy);
+}
+
+.team-section-title {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 20px 0 10px;
+    border-bottom: 1px solid var(--grid-line-light);
+    padding-bottom: 4px;
+}
+
+.roster-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.roster-table th {
+    background: var(--paper-bg-alt);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--grid-line);
+}
+
+.roster-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--grid-line-light);
+}
+
+.roster-table input {
+    font-family: var(--font-handwriting);
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--ink-color);
+    padding: 2px 4px;
+    width: 100%;
+    outline: none;
+}
+
+.roster-table input:focus {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 2px;
+}
+
+.roster-table input::placeholder {
+    color: var(--grid-line-light);
+    font-weight: 400;
+}
+
+.roster-table .col-num { width: 60px; }
+.roster-table .col-name { width: auto; }
+.roster-table .col-pos { width: 80px; }
+.roster-table .col-action { width: 40px; text-align: center; }
+
+.btn-remove-row {
+    background: none;
+    border: none;
+    color: var(--out-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 6px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.btn-remove-row:hover {
+    opacity: 1;
+}
+
+.btn-add-row {
+    display: block;
+    width: 100%;
+    padding: 6px;
+    font-family: var(--font-handwriting);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    background: none;
+    border: 1px dashed var(--grid-line-light);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-add-row:hover {
+    color: var(--ink-color);
+    border-color: var(--grid-line);
+}
+
+/* Lineup Builder */
+.lineup-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.lineup-slot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line-light);
+    border-radius: 4px;
+}
+
+.lineup-slot-order {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    width: 24px;
+    text-align: center;
+}
+
+.lineup-slot select,
+.lineup-slot-pos {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    padding: 3px 6px;
+    border: 1px solid var(--grid-line-light);
+    border-radius: 3px;
+    background: white;
+}
+
+.lineup-slot select {
+    flex: 1;
+}
+
+.lineup-slot-pos {
+    width: 60px;
+    text-align: center;
+    font-family: var(--font-handwriting);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.lineup-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.lineup-actions button {
+    padding: 6px 16px;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-save-lineup {
+    background: var(--header-bg);
+    color: var(--header-text);
+    border: none;
+}
+
+.btn-save-lineup:hover {
+    background: #4a6a4a;
+}
+
+.btn-use-lineup {
+    background: var(--walk-color);
+    color: white;
+    border: none;
+}
+
+.btn-use-lineup:hover {
+    background: #3a5a9a;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--ink-color);
+    border: 1px solid var(--grid-line);
+}
+
+.btn-secondary:hover {
+    background: var(--btn-hover);
+}
+
+/* Saved Lineups List */
+.saved-lineups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.saved-lineup-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--paper-bg);
+    border: 1px solid var(--grid-line-light);
+    border-radius: 4px;
+}
+
+.saved-lineup-card-name {
+    font-family: var(--font-handwriting);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.saved-lineup-card-date {
+    font-size: 0.75rem;
+    color: var(--ink-light);
+}
+
+.saved-lineup-card-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.saved-lineup-card-actions button {
+    padding: 3px 10px;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 3px;
+    background: white;
+    cursor: pointer;
+}
+
+/* ============================================================
+   Stats Page (full page layout)
+   ============================================================ */
+
+.stats-page-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.stats-page-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--grid-line-heavy);
+}
+
+.stats-page-tab {
+    padding: 8px 24px;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid var(--grid-line-light);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    background: var(--paper-bg-alt);
+    cursor: pointer;
+    color: var(--ink-light);
+    transition: background 0.15s;
+}
+
+.stats-page-tab.active {
+    background: var(--paper-bg);
+    color: var(--ink-color);
+    border-color: var(--grid-line-heavy);
+    font-weight: 600;
+    position: relative;
+    top: 1px;
+}
+
+.stats-page-tab:hover:not(.active) {
+    background: var(--btn-hover);
+}
 }

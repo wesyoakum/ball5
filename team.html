@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team — Ball5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="site-nav">
+        <img src="logo.svg" alt="Ball5" class="site-nav-logo">
+        <div class="site-nav-links">
+            <a href="index.html">Scorebook</a>
+            <a href="teams.html" class="active">Teams</a>
+            <a href="stats.html">Stats</a>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div style="margin-bottom:8px;">
+            <a href="teams.html" style="font-size:0.8rem; color:var(--ink-light); text-decoration:none;">&larr; All Teams</a>
+        </div>
+
+        <input type="text" class="team-name-editable" id="team-name" placeholder="Team Name">
+
+        <!-- Roster -->
+        <h2 class="team-section-title">Roster</h2>
+        <table class="roster-table" id="roster-table">
+            <thead>
+                <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-pos">Pos</th>
+                    <th class="col-action"></th>
+                </tr>
+            </thead>
+            <tbody id="roster-body"></tbody>
+        </table>
+        <button class="btn-add-row" id="btn-add-roster">+ Add Player</button>
+
+        <!-- Lineup Builder -->
+        <h2 class="team-section-title">Lineup Builder</h2>
+        <div class="lineup-builder" id="lineup-builder"></div>
+        <button class="btn-add-row" id="btn-add-lineup-slot">+ Add Spot</button>
+        <div class="lineup-actions">
+            <button class="btn-save-lineup" id="btn-save-lineup">Save Lineup</button>
+            <button class="btn-use-lineup" id="btn-use-away">Use as Visitors</button>
+            <button class="btn-use-lineup" id="btn-use-home">Use as Home</button>
+            <button class="btn-secondary" id="btn-delete-team">Delete Team</button>
+        </div>
+
+        <!-- Saved Lineups -->
+        <h2 class="team-section-title">Saved Lineups</h2>
+        <div class="saved-lineups-list" id="saved-lineups"></div>
+    </div>
+
+    <script src="storage.js"></script>
+    <script>
+    (async function() {
+        'use strict';
+
+        const $ = (sel) => document.querySelector(sel);
+        const params = new URLSearchParams(window.location.search);
+        const teamId = params.get('id');
+
+        if (!teamId) {
+            window.location.href = 'teams.html';
+            return;
+        }
+
+        await Storage.open();
+        let team = await Storage.get('teams', teamId);
+
+        if (!team) {
+            window.location.href = 'teams.html';
+            return;
+        }
+
+        // Ensure data shape
+        if (!team.roster) team.roster = [];
+        if (!team.lineups) team.lineups = [];
+        if (!team.players) team.players = [];
+
+        // If roster is empty but players exist, seed roster from players
+        if (team.roster.length === 0 && team.players.length > 0) {
+            team.roster = team.players
+                .filter(p => p.name && p.name.trim())
+                .map(p => ({ name: p.name, number: p.number || '', positions: p.position ? [p.position] : [] }));
+        }
+
+        // Lineup state (working lineup, not yet saved)
+        let lineup = team.players.length > 0
+            ? team.players.map(p => ({ name: p.name || '', number: p.number || '', position: p.position || '' }))
+            : Array.from({ length: 9 }, () => ({ name: '', number: '', position: '' }));
+
+        const teamNameInput = $('#team-name');
+        teamNameInput.value = team.name || '';
+        document.title = (team.name || 'Team') + ' — Ball5';
+
+        teamNameInput.addEventListener('change', () => {
+            team.name = teamNameInput.value;
+            document.title = (team.name || 'Team') + ' — Ball5';
+            save();
+        });
+
+        async function save() {
+            team.updatedAt = new Date().toISOString();
+            // Keep players in sync with current lineup
+            team.players = lineup.map(p => ({ name: p.name, number: p.number, position: p.position }));
+            await Storage.put('teams', teamId, team);
+        }
+
+        // ---- Roster ----
+        function renderRoster() {
+            const tbody = $('#roster-body');
+            tbody.innerHTML = '';
+            for (let i = 0; i < team.roster.length; i++) {
+                const p = team.roster[i];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="col-num"><input type="text" value="${p.number || ''}" placeholder="#" maxlength="3" data-idx="${i}" data-field="number"></td>
+                    <td class="col-name"><input type="text" value="${p.name || ''}" placeholder="Player name" data-idx="${i}" data-field="name"></td>
+                    <td class="col-pos"><input type="text" value="${(p.positions || []).join('/')}" placeholder="Pos" data-idx="${i}" data-field="positions"></td>
+                    <td class="col-action"><button class="btn-remove-row" data-idx="${i}">&times;</button></td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Event delegation
+            tbody.onchange = (e) => {
+                const input = e.target;
+                if (!input.dataset.idx) return;
+                const idx = parseInt(input.dataset.idx);
+                const field = input.dataset.field;
+                if (field === 'positions') {
+                    team.roster[idx].positions = input.value.toUpperCase().split('/').map(s => s.trim()).filter(Boolean);
+                    input.value = input.value.toUpperCase();
+                } else if (field === 'number') {
+                    team.roster[idx].number = input.value;
+                } else if (field === 'name') {
+                    team.roster[idx].name = input.value;
+                }
+                save();
+                renderLineup(); // update lineup dropdowns
+            };
+
+            tbody.onclick = (e) => {
+                const btn = e.target.closest('.btn-remove-row');
+                if (!btn) return;
+                const idx = parseInt(btn.dataset.idx);
+                team.roster.splice(idx, 1);
+                save();
+                renderRoster();
+                renderLineup();
+            };
+        }
+
+        $('#btn-add-roster').addEventListener('click', () => {
+            team.roster.push({ name: '', number: '', positions: [] });
+            save();
+            renderRoster();
+            renderLineup();
+            // Focus the new name input
+            const inputs = document.querySelectorAll('#roster-body input[data-field="name"]');
+            if (inputs.length) inputs[inputs.length - 1].focus();
+        });
+
+        // ---- Lineup Builder ----
+        function renderLineup() {
+            const container = $('#lineup-builder');
+            container.innerHTML = '';
+
+            const rosterNames = team.roster.filter(p => p.name).map(p => p.name);
+
+            for (let i = 0; i < lineup.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'lineup-slot';
+
+                const order = document.createElement('span');
+                order.className = 'lineup-slot-order';
+                order.textContent = i + 1;
+
+                const select = document.createElement('select');
+                select.innerHTML = '<option value="">-- Select Player --</option>';
+                for (const name of rosterNames) {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    if (name === lineup[i].name) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                select.addEventListener('change', () => {
+                    lineup[i].name = select.value;
+                    // Auto-fill number from roster
+                    const rp = team.roster.find(r => r.name === select.value);
+                    if (rp) {
+                        lineup[i].number = rp.number || '';
+                        if (rp.positions && rp.positions.length === 1) {
+                            lineup[i].position = rp.positions[0];
+                            posInput.value = rp.positions[0];
+                        }
+                    }
+                });
+
+                const posInput = document.createElement('input');
+                posInput.className = 'lineup-slot-pos';
+                posInput.type = 'text';
+                posInput.value = lineup[i].position || '';
+                posInput.placeholder = 'Pos';
+                posInput.maxLength = 3;
+                posInput.addEventListener('change', () => {
+                    lineup[i].position = posInput.value.toUpperCase();
+                    posInput.value = posInput.value.toUpperCase();
+                });
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-remove-row';
+                removeBtn.textContent = '\u00d7';
+                removeBtn.addEventListener('click', () => {
+                    lineup.splice(i, 1);
+                    renderLineup();
+                });
+
+                slot.appendChild(order);
+                slot.appendChild(select);
+                slot.appendChild(posInput);
+                if (lineup.length > 1) slot.appendChild(removeBtn);
+                container.appendChild(slot);
+            }
+        }
+
+        $('#btn-add-lineup-slot').addEventListener('click', () => {
+            lineup.push({ name: '', number: '', position: '' });
+            renderLineup();
+        });
+
+        // ---- Save Lineup ----
+        $('#btn-save-lineup').addEventListener('click', async () => {
+            const name = prompt('Lineup name:', 'Lineup ' + (team.lineups.length + 1));
+            if (!name) return;
+            team.lineups.push({
+                name,
+                date: new Date().toISOString().slice(0, 10),
+                players: lineup.map(p => ({ ...p }))
+            });
+            await save();
+            renderSavedLineups();
+        });
+
+        // ---- Use in Current Game ----
+        async function useLineup(side) {
+            const currentGame = await Storage.get('currentGame', 'current');
+            if (!currentGame) {
+                alert('No current game. Start a new game from the Scorebook first.');
+                return;
+            }
+            const teamData = side === 'away' ? currentGame.awayTeam : currentGame.homeTeam;
+            teamData.teamId = teamId;
+            teamData.name = team.name;
+            teamData.players = lineup.map(p => ({ name: p.name, number: p.number, position: p.position }));
+            await Storage.put('currentGame', 'current', currentGame);
+            window.location.href = 'index.html';
+        }
+
+        $('#btn-use-away').addEventListener('click', () => useLineup('away'));
+        $('#btn-use-home').addEventListener('click', () => useLineup('home'));
+
+        // ---- Delete Team ----
+        $('#btn-delete-team').addEventListener('click', async () => {
+            if (!confirm('Delete this team permanently?')) return;
+            await Storage.del('teams', teamId);
+            window.location.href = 'teams.html';
+        });
+
+        // ---- Saved Lineups ----
+        function renderSavedLineups() {
+            const container = $('#saved-lineups');
+            if (team.lineups.length === 0) {
+                container.innerHTML = '<p class="stats-empty" style="padding:16px 0;">No saved lineups yet.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            for (let i = 0; i < team.lineups.length; i++) {
+                const lu = team.lineups[i];
+                const card = document.createElement('div');
+                card.className = 'saved-lineup-card';
+                card.innerHTML = `
+                    <div>
+                        <div class="saved-lineup-card-name">${lu.name}</div>
+                        <div class="saved-lineup-card-date">${lu.date} &middot; ${lu.players.filter(p=>p.name).length} players</div>
+                    </div>
+                    <div class="saved-lineup-card-actions">
+                        <button data-action="load" data-idx="${i}">Load</button>
+                        <button data-action="delete" data-idx="${i}">Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+
+            container.onclick = async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const idx = parseInt(btn.dataset.idx);
+                if (btn.dataset.action === 'load') {
+                    lineup = team.lineups[idx].players.map(p => ({ ...p }));
+                    renderLineup();
+                } else if (btn.dataset.action === 'delete') {
+                    team.lineups.splice(idx, 1);
+                    await save();
+                    renderSavedLineups();
+                }
+            };
+        }
+
+        // ---- Initial Render ----
+        renderRoster();
+        renderLineup();
+        renderSavedLineups();
+
+        if (Storage.cloudEnabled()) {
+            Storage.pullFromCloud().then(async (updated) => {
+                if (updated) {
+                    team = await Storage.get('teams', teamId);
+                    if (!team.roster) team.roster = [];
+                    if (!team.lineups) team.lineups = [];
+                    renderRoster();
+                    renderLineup();
+                    renderSavedLineups();
+                }
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

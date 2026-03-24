@@ -10,14 +10,18 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Top toolbar -->
-    <header class="toolbar">
-        <h1>Baseball Scorebook</h1>
-        <div class="toolbar-actions">
+    <nav class="site-nav">
+        <img src="logo.svg" alt="Ball5" class="site-nav-logo">
+        <div class="site-nav-links">
+            <a href="index.html" class="active">Scorebook</a>
+            <a href="teams.html">Teams</a>
+            <a href="stats.html">Stats</a>
+        </div>
+        <div class="site-nav-spacer"></div>
+        <div class="site-nav-actions">
             <button id="btn-new-game" title="New Game">New Game</button>
             <button id="btn-end-game" title="End Game & Archive">End Game</button>
             <button id="btn-add-inning" title="Add Extra Inning">+ Inning</button>
-            <button id="btn-stats" title="Season Statistics">Stats</button>
             <button id="btn-history" title="Game History">History</button>
             <button id="btn-save" title="Export JSON">Export</button>
             <label class="file-load-label" title="Import JSON">
@@ -25,7 +29,7 @@
                 <input type="file" id="btn-load" accept=".json" hidden>
             </label>
         </div>
-    </header>
+    </nav>
 
     <main class="scorebook">
         <!-- Away Team -->
@@ -467,49 +471,6 @@
             <div class="modal-footer">
                 <button class="btn-cancel" id="btn-cancel-new">Cancel</button>
                 <button class="btn-save-play" id="btn-start-game">Start Game</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Modal -->
-    <div class="modal-overlay" id="stats-modal" hidden>
-        <div class="modal modal-stats">
-            <div class="modal-header">
-                <span class="modal-title">Season Statistics</span>
-                <button class="modal-close" id="stats-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="stats-filters">
-                    <select id="stats-team-filter" class="stats-filter-select">
-                        <option value="">All Teams</option>
-                    </select>
-                    <input type="date" id="stats-date-from" class="stats-filter-date" title="From date">
-                    <input type="date" id="stats-date-to" class="stats-filter-date" title="To date">
-                    <button id="stats-refresh" class="stats-refresh-btn">Refresh</button>
-                </div>
-                <div class="stats-tabs">
-                    <button class="stats-tab active" data-tab="batting">Batting</button>
-                    <button class="stats-tab" data-tab="pitching">Pitching</button>
-                    <button class="stats-tab" data-tab="standings">Standings</button>
-                </div>
-                <div class="stats-table-container" id="stats-table-container">
-                    <p class="stats-empty">No games recorded yet. Complete and archive games to see season statistics here.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game History Modal -->
-    <div class="modal-overlay" id="history-modal" hidden>
-        <div class="modal modal-history">
-            <div class="modal-header">
-                <span class="modal-title">Game History</span>
-                <button class="modal-close" id="history-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="game-list" id="game-list">
-                    <p class="stats-empty">No archived games yet.</p>
-                </div>
             </div>
         </div>
     </div>

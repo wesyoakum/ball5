@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teams — Ball5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="site-nav">
+        <img src="logo.svg" alt="Ball5" class="site-nav-logo">
+        <div class="site-nav-links">
+            <a href="index.html">Scorebook</a>
+            <a href="teams.html" class="active">Teams</a>
+            <a href="stats.html">Stats</a>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <h1 class="page-title" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Teams</h1>
+            <button class="btn-add-team" id="btn-add-team">+ New Team</button>
+        </div>
+        <div class="teams-grid" id="teams-grid">
+            <p class="stats-empty">Loading...</p>
+        </div>
+    </div>
+
+    <script src="storage.js"></script>
+    <script>
+    (async function() {
+        'use strict';
+
+        await Storage.open();
+
+        async function render() {
+            const grid = document.getElementById('teams-grid');
+            const allTeams = await Storage.getAll('teams');
+
+            if (allTeams.length === 0) {
+                grid.innerHTML = '<p class="stats-empty">No teams saved yet. Teams are saved automatically when you score games.</p>';
+                return;
+            }
+
+            // Sort alphabetically
+            allTeams.sort((a, b) => (a.value.name || '').localeCompare(b.value.name || ''));
+
+            grid.innerHTML = '';
+            for (const { key, value: team } of allTeams) {
+                const playerCount = (team.players || []).filter(p => p.name && p.name.trim()).length;
+                const rosterCount = (team.roster || []).filter(p => p.name && p.name.trim()).length;
+                const totalPlayers = Math.max(playerCount, rosterCount);
+                const lineupCount = (team.lineups || []).length;
+
+                const card = document.createElement('div');
+                card.className = 'team-card';
+                card.innerHTML = `
+                    <div class="team-card-name">${team.name || 'Unnamed Team'}</div>
+                    <div class="team-card-info">
+                        ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}
+                        ${lineupCount > 0 ? ' &middot; ' + lineupCount + ' saved lineup' + (lineupCount !== 1 ? 's' : '') : ''}
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.href = 'team.html?id=' + encodeURIComponent(key);
+                });
+                grid.appendChild(card);
+            }
+        }
+
+        document.getElementById('btn-add-team').addEventListener('click', async () => {
+            const id = 'team-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+            await Storage.put('teams', id, {
+                id,
+                name: '',
+                roster: [],
+                players: [],
+                lineups: [],
+                updatedAt: new Date().toISOString()
+            });
+            window.location.href = 'team.html?id=' + encodeURIComponent(id);
+        });
+
+        await render();
+
+        if (Storage.cloudEnabled()) {
+            Storage.pullFromCloud().then(updated => { if (updated) render(); });
+        }
+    })();
+    </script>
+</body>
+</html>
