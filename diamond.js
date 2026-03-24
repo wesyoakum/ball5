@@ -292,11 +292,11 @@ const Diamond = (() => {
         text.setAttribute('text-anchor', 'start');
         text.setAttribute('font-family', "'Caveat', cursive");
         text.setAttribute('font-size', '5');
-        text.setAttribute('font-weight', '400');
-        text.setAttribute('fill', '#bbb');
+        text.setAttribute('font-weight', '600');
+        text.setAttribute('fill', '#888');
         text.setAttribute('data-quick-out', 'true');
         text.style.cursor = 'pointer';
-        text.textContent = 'out';
+        text.textContent = 'OUT';
         svg.appendChild(text);
     }
 
@@ -387,7 +387,7 @@ const Diamond = (() => {
             rect.setAttribute('x', bx); rect.setAttribute('y', topRowY);
             rect.setAttribute('width', boxSize); rect.setAttribute('height', boxSize);
             rect.setAttribute('rx', '0.3');
-            rect.setAttribute('stroke', '#999'); rect.setAttribute('stroke-width', '0.3');
+            rect.setAttribute('stroke', '#777'); rect.setAttribute('stroke-width', '0.5');
             rect.setAttribute('fill', i < strikes ? '#555' : 'none');
             svg.appendChild(rect);
         }
@@ -401,7 +401,7 @@ const Diamond = (() => {
             rect.setAttribute('x', bx); rect.setAttribute('y', botRowY);
             rect.setAttribute('width', boxSize); rect.setAttribute('height', boxSize);
             rect.setAttribute('rx', '0.3');
-            rect.setAttribute('stroke', '#999'); rect.setAttribute('stroke-width', '0.3');
+            rect.setAttribute('stroke', '#777'); rect.setAttribute('stroke-width', '0.5');
             rect.setAttribute('fill', i < balls ? '#555' : 'none');
             svg.appendChild(rect);
         }
@@ -448,7 +448,7 @@ const Diamond = (() => {
             text.setAttribute('font-family', "'Caveat', cursive");
             text.setAttribute('font-size', '5');
             text.setAttribute('font-weight', activeResult === lbl ? '800' : '400');
-            text.setAttribute('fill', activeResult === lbl ? INK : '#bbb');
+            text.setAttribute('fill', activeResult === lbl ? INK : '#888');
             text.textContent = lbl;
             text.setAttribute('data-quick-result', lbl);
             svg.appendChild(text);

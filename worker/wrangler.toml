@@ -1,0 +1,13 @@
+name = "scorebook-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Create the KV namespace:
+#   npx wrangler kv:namespace create SCOREBOOK
+# Then paste the id below:
+[[kv_namespaces]]
+binding = "SCOREBOOK"
+id = "46242c69347d4f0ca1c482c360357624"
+
+# Set the API key secret:
+#   npx wrangler secret put API_KEY

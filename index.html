@@ -32,7 +32,8 @@
         <section class="team-section" id="away-section">
             <div class="team-header">
                 <span class="team-label">VISITORS</span>
-                <input type="text" class="team-name-input" id="away-team-name" placeholder="Team Name" value="">
+                <input type="text" class="team-name-input" id="away-team-name" placeholder="Team Name" value="" list="saved-teams-list">
+                <button class="btn-save-roster" id="btn-save-roster-away" title="Save this roster for reuse">Save Roster</button>
             </div>
             <div class="scorebook-grid" id="away-grid">
                 <!-- Header row -->
@@ -87,7 +88,8 @@
         <section class="team-section" id="home-section">
             <div class="team-header">
                 <span class="team-label">HOME</span>
-                <input type="text" class="team-name-input" id="home-team-name" placeholder="Team Name" value="">
+                <input type="text" class="team-name-input" id="home-team-name" placeholder="Team Name" value="" list="saved-teams-list">
+                <button class="btn-save-roster" id="btn-save-roster-home" title="Save this roster for reuse">Save Roster</button>
             </div>
             <div class="scorebook-grid" id="home-grid">
                 <div class="grid-header-row">
@@ -122,6 +124,11 @@
             </div>
         </section>
     </main>
+
+    <!-- Datalists for team/player dropdowns (populated by JS) -->
+    <datalist id="saved-teams-list"></datalist>
+    <datalist id="roster-away"></datalist>
+    <datalist id="roster-home"></datalist>
 
     <!-- Play Entry Modal -->
     <div class="modal-overlay" id="play-modal" hidden>

@@ -8,6 +8,7 @@
     // ---- Game State ----
     const PLAYER_COUNT = 9;
     let game = createEmptyGame();
+    let cachedTeams = []; // populated from Storage for datalist dropdowns
 
     function createEmptyGame() {
         return {
@@ -73,6 +74,57 @@
                 console.warn('Auto-save failed:', err);
             });
         }, 300);
+    }
+
+    // ---- Team/Player Datalist Helpers ----
+
+    async function populateTeamDatalist() {
+        const savedTeams = await Storage.getAll('teams');
+        cachedTeams = savedTeams.map(t => t.value);
+        const dl = document.getElementById('saved-teams-list');
+        if (!dl) return;
+        dl.innerHTML = '';
+        for (const team of cachedTeams) {
+            const opt = document.createElement('option');
+            opt.value = team.name;
+            dl.appendChild(opt);
+        }
+    }
+
+    function populateRosterDatalist(teamKey, teamName) {
+        const dl = document.getElementById('roster-' + teamKey);
+        if (!dl) return;
+        dl.innerHTML = '';
+        if (!teamName) return;
+        const team = cachedTeams.find(t => t.name && t.name.trim().toLowerCase() === teamName.trim().toLowerCase());
+        if (!team) return;
+        for (const p of team.players) {
+            if (!p.name || !p.name.trim()) continue;
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            dl.appendChild(opt);
+        }
+    }
+
+    function handleTeamNameChange(teamKey) {
+        const teamData = teamKey === 'away' ? game.awayTeam : game.homeTeam;
+        const inputEl = teamKey === 'away' ? document.getElementById('away-team-name') : document.getElementById('home-team-name');
+        const newName = inputEl.value.trim();
+
+        teamData.name = inputEl.value;
+
+        // Check if name matches a saved team — auto-fill lineup
+        const match = cachedTeams.find(t => t.name && t.name.trim().toLowerCase() === newName.toLowerCase());
+        if (match) {
+            teamData.teamId = match.id;
+            for (let i = 0; i < PLAYER_COUNT && i < match.players.length; i++) {
+                teamData.players[i] = { ...match.players[i] };
+            }
+        }
+
+        populateRosterDatalist(teamKey, newName);
+        persistCurrentGame();
+        renderAll();
     }
 
     // ---- DOM References ----
@@ -195,10 +247,21 @@
             nameInput.placeholder = `Player ${p + 1}`;
             nameInput.setAttribute('data-team', teamKey);
             nameInput.setAttribute('data-player', p);
+            nameInput.setAttribute('list', 'roster-' + teamKey);
             nameInput.addEventListener('change', (e) => {
                 teamData.players[p].name = e.target.value;
+                // Auto-fill number/position if player matches a roster entry
+                const team = cachedTeams.find(t => t.name && t.name.trim().toLowerCase() === (teamData.name || '').trim().toLowerCase());
+                if (team) {
+                    const rosterPlayer = team.players.find(r => r.name === e.target.value);
+                    if (rosterPlayer) {
+                        if (rosterPlayer.number) teamData.players[p].number = rosterPlayer.number;
+                        if (rosterPlayer.position) teamData.players[p].position = rosterPlayer.position;
+                    }
+                }
                 updateLinescore();
                 persistCurrentGame();
+                renderAll();
             });
             nameCell.appendChild(nameInput);
             row.appendChild(nameCell);
@@ -516,6 +579,10 @@
         // Pitcher sections: away batting grid shows home pitchers, and vice versa
         renderPitcherSection('away-pitcher-rows', 'home');
         renderPitcherSection('home-pitcher-rows', 'away');
+
+        // Populate roster datalists for player name dropdowns
+        populateRosterDatalist('away', game.awayTeam.name);
+        populateRosterDatalist('home', game.homeTeam.name);
     }
 
     /**
@@ -2165,15 +2232,27 @@
     // Nav buttons removed — combined layout
 
     // Team name inputs
+    // Team name change: use 'change' event for datalist selection + auto-fill
+    awayTeamName.addEventListener('change', () => handleTeamNameChange('away'));
+    homeTeamName.addEventListener('change', () => handleTeamNameChange('home'));
+    // Also update on plain typing (input event) for linescore, but no auto-fill
     awayTeamName.addEventListener('input', () => {
         game.awayTeam.name = awayTeamName.value;
         updateLinescore();
-        persistCurrentGame();
     });
     homeTeamName.addEventListener('input', () => {
         game.homeTeam.name = homeTeamName.value;
         updateLinescore();
-        persistCurrentGame();
+    });
+
+    // Save Roster buttons
+    $('#btn-save-roster-away').addEventListener('click', async () => {
+        await saveTeamToStorage(game.awayTeam);
+        await populateTeamDatalist();
+    });
+    $('#btn-save-roster-home').addEventListener('click', async () => {
+        await saveTeamToStorage(game.homeTeam);
+        await populateTeamDatalist();
     });
 
     // ---- Add Extra Inning ----
@@ -2707,17 +2786,32 @@
         }
     });
 
-    // ---- Initialize with persistence ----
+    // ---- Initialize with persistence + auto cloud sync ----
     (async function init() {
         await Storage.open();
+
+        // Load local data first (instant)
         const saved = await Storage.get('currentGame', 'current');
         if (saved && saved.atBats) {
             game = saved;
-            // Ensure metadata fields exist (for games started before this update)
             if (!game.id) game.id = 'game-' + Date.now();
             if (!game.status) game.status = 'in-progress';
         }
+        await populateTeamDatalist();
         renderAll();
+
+        // Auto-pull from cloud in background (non-blocking)
+        if (Storage.cloudEnabled()) {
+            Storage.fullSync().then(async (updated) => {
+                if (updated) {
+                    const cloudSaved = await Storage.get('currentGame', 'current');
+                    if (cloudSaved && cloudSaved.atBats) {
+                        game = cloudSaved;
+                    }
+                    renderAll();
+                }
+            });
+        }
     })();
 
 })();

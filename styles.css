@@ -109,6 +109,24 @@ body {
     border-bottom: 2px solid var(--grid-line-heavy);
 }
 
+.btn-save-roster {
+    padding: 2px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    border: 1px solid var(--grid-line);
+    border-radius: 3px;
+    background: white;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.btn-save-roster:hover {
+    background: var(--btn-hover);
+    color: var(--ink-color);
+}
+
 .team-label {
     font-weight: 600;
     font-size: 0.8rem;
@@ -2621,4 +2639,33 @@ body {
     padding: 3px 12px;
     border-radius: 3px;
     margin-left: 12px;
+}
+
+/* ============================================================
+   Cloud Sync Button & Indicator
+   ============================================================ */
+
+.btn-sync {
+    position: relative;
+}
+
+.sync-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    margin-left: 4px;
+    vertical-align: middle;
+    transition: background 0.2s;
+}
+
+.sync-dot.syncing {
+    background: #ffd700;
+    animation: sync-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes sync-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
