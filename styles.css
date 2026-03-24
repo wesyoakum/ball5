@@ -2736,8 +2736,9 @@ body {
 }
 
 .site-nav-links a.active {
-    background: rgba(255, 255, 255, 0.25);
+    background: none;
     font-weight: 600;
+    color: #fff;
 }
 
 .site-nav-spacer {
