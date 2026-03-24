@@ -303,22 +303,26 @@
                 innCell.setAttribute('data-player', p);
 
                 const ab = getAtBat(teamKey, p, inn);
-                // Compute runners on base before this batter
-                const runners = Scoring.getBaseRunners(
-                    game.atBats, teamKey, inn, p, teamData.players.length
-                );
-                const runnerState = {
-                    first: runners.first !== null,
-                    second: runners.second !== null,
-                    third: runners.third !== null
-                };
+
+                // Only show runner indicator on the current batter's cell
+                const isCurrentBatter = !ab && p === getCurrentBatterIdx(teamKey, inn, teamData.players.length);
+                let runnerState = null;
+                if (isCurrentBatter) {
+                    const runners = Scoring.getBaseRunners(
+                        game.atBats, teamKey, inn, p, teamData.players.length
+                    );
+                    runnerState = {
+                        first: runners.first !== null,
+                        second: runners.second !== null,
+                        third: runners.third !== null
+                    };
+                }
 
                 if (ab) {
                     innCell.classList.add('has-play');
                     const container = document.createElement('div');
                     container.className = 'diamond-container';
                     const svg = Diamond.render(ab);
-                    Diamond.drawRunnerIndicator(svg, runnerState);
                     container.appendChild(svg);
                     innCell.appendChild(container);
                 } else {
@@ -326,7 +330,7 @@
                     const container = document.createElement('div');
                     container.className = 'diamond-container';
                     const svg = Diamond.render(null);
-                    Diamond.drawRunnerIndicator(svg, runnerState);
+                    if (runnerState) Diamond.drawRunnerIndicator(svg, runnerState);
                     container.appendChild(svg);
                     innCell.appendChild(container);
                 }
@@ -1250,6 +1254,19 @@
     /**
      * Count existing outs in an inning to auto-assign the next out number.
      */
+    /**
+     * Find the current batter index for an inning — the first player
+     * in the batting order without a completed at-bat (has a result).
+     * Returns -1 if all players have batted (inning complete).
+     */
+    function getCurrentBatterIdx(team, inning, playerCount) {
+        for (let p = 0; p < playerCount; p++) {
+            const ab = getAtBat(team, p, inning);
+            if (!ab || !ab.result) return p;
+        }
+        return -1; // all have batted
+    }
+
     function countOutsInInning(team, inning) {
         let outs = 0;
         const teamData = team === 'away' ? game.awayTeam : game.homeTeam;
