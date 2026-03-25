@@ -7,6 +7,13 @@
       "runtimeArgs": ["/c", "serve.cmd"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "fleet-tracker",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\WesYoakum\\fleet-tracker\\serve.cmd"],
+      "port": 3001,
+      "autoPort": true
     }
   ]
 }

@@ -225,6 +225,11 @@
         const existingRows = gridEl.querySelectorAll('.grid-player-row');
         existingRows.forEach(r => r.remove());
 
+        // Ensure at least PLAYER_COUNT slots exist
+        while (teamData.players.length < PLAYER_COUNT) {
+            teamData.players.push({ name: '', number: '', position: '' });
+        }
+
         const playerCount = teamData.players.length;
         for (let p = 0; p < playerCount; p++) {
             const player = teamData.players[p];
@@ -2683,6 +2688,9 @@
         }
     });
 
+    // ---- Render default game immediately (before async storage) ----
+    renderAll();
+
     // ---- Initialize with persistence + auto cloud sync ----
     (async function init() {
         await Storage.open();
@@ -2693,9 +2701,16 @@
             game = saved;
             if (!game.id) game.id = 'game-' + Date.now();
             if (!game.status) game.status = 'in-progress';
+            // Ensure both teams have at least PLAYER_COUNT slots
+            for (const team of [game.awayTeam, game.homeTeam]) {
+                while (team.players.length < PLAYER_COUNT) {
+                    team.players.push({ name: '', number: '', position: '' });
+                }
+            }
         }
         await populateTeamDatalist();
         renderAll();
+
 
         // Auto-pull from cloud in background (non-blocking)
         if (Storage.cloudEnabled()) {
