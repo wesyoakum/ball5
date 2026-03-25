@@ -6,7 +6,7 @@
     'use strict';
 
     // ---- Game State ----
-    const PLAYER_COUNT = 9;
+    const PLAYER_COUNT = 10;
     let game = createEmptyGame();
     let cachedTeams = []; // populated from Storage for datalist dropdowns
 
