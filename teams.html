@@ -17,7 +17,10 @@
             <a href="teams.html" class="active">Teams</a>
             <a href="stats.html">Stats</a>
         </div>
+        <span class="version-tag" id="version-tag"></span>
     </nav>
+    <script src="version.js"></script>
+    <script>document.getElementById('version-tag').textContent = 'v' + APP_VERSION;</script>
 
     <div class="page-container">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">

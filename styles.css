@@ -2745,6 +2745,16 @@ body {
     flex: 1;
 }
 
+.version-tag {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-family: var(--font-ui);
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    align-self: flex-end;
+    padding-bottom: 4px;
+}
+
 .site-nav-actions {
     display: flex;
     gap: 8px;
