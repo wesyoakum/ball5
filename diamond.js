@@ -76,7 +76,7 @@ const Diamond = (() => {
             const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             hitArea.setAttribute('cx', pos.x);
             hitArea.setAttribute('cy', pos.y);
-            hitArea.setAttribute('r', '6');
+            hitArea.setAttribute('r', '10');
             hitArea.setAttribute('fill', 'transparent');
             hitArea.setAttribute('data-base-click', name);
             hitArea.style.cursor = 'pointer';
@@ -646,8 +646,9 @@ const Diamond = (() => {
             };
         }
 
-        svg.addEventListener('mousedown', (e) => {
+        svg.addEventListener('pointerdown', (e) => {
             e.preventDefault();
+            svg.setPointerCapture(e.pointerId);
             const vb = screenToViewBox(e);
             sprayX = vb.x;
             sprayY = vb.y;
@@ -657,7 +658,7 @@ const Diamond = (() => {
             if (onClick) onClick(sprayX, sprayY, 0, 'ground', true); // true = preview
         });
 
-        document.addEventListener('mousemove', function onMove(e) {
+        svg.addEventListener('pointermove', (e) => {
             if (!dragging) return;
             const deltaY = dragStartScreenY - e.clientY; // positive = dragged up
             let style, slider;
@@ -676,7 +677,7 @@ const Diamond = (() => {
             if (onClick) onClick(sprayX, sprayY, slider, style, true); // preview
         });
 
-        document.addEventListener('mouseup', function onUp(e) {
+        svg.addEventListener('pointerup', (e) => {
             if (!dragging) return;
             dragging = false;
             const deltaY = dragStartScreenY - e.clientY;

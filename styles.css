@@ -3316,4 +3316,294 @@ body {
 .stats-page-tab:hover:not(.active) {
     color: var(--ink-color);
 }
+
+/* ============================================================
+   Mobile & Tablet Optimization
+   ============================================================ */
+
+/* ---- Phase 1B: Touch behavior ---- */
+html {
+    touch-action: manipulation;        /* kill 300ms tap delay */
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    overscroll-behavior: none;         /* prevent pull-to-refresh */
+}
+
+body.modal-open,
+body:has(.modal-overlay:not([hidden])) {
+    overflow: hidden;                  /* prevent scroll behind modal */
+}
+
+.cell-inning {
+    touch-action: none;                /* allow drag without scroll */
+}
+
+.diamond-container,
+.modal-diamond-preview .diamond-container,
+.strike-zone-container svg {
+    touch-action: none;
+}
+
+/* ---- Phase 2: Hamburger toggle ---- */
+.nav-toggle {
+    display: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--header-text);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-family: var(--font-ui);
+    line-height: 1;
+}
+
+/* ---- Responsive: Tablet (≤900px) ---- */
+@media (max-width: 900px) {
+    /* Nav: show hamburger, collapse actions */
+    .nav-toggle {
+        display: block;
+    }
+
+    .site-nav-actions {
+        display: none;
+        position: absolute;
+        top: 44px;
+        right: 0;
+        background: var(--header-bg);
+        flex-direction: column;
+        padding: 8px 12px;
+        gap: 6px;
+        box-shadow: 0 4px 12px var(--shadow);
+        border-radius: 0 0 0 8px;
+        z-index: 200;
+    }
+
+    .site-nav-actions.open {
+        display: flex;
+    }
+
+    .site-nav-actions button,
+    .site-nav-actions .file-load-label {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Modal: stack pitch + result vertically */
+    .combined-play-layout {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .combined-left-col {
+        flex: none;
+        border-right: none;
+        border-bottom: 1px solid var(--grid-line);
+        padding-right: 0;
+        padding-bottom: 8px;
+    }
+
+    /* Tap targets: enlarge buttons */
+    .play-btn {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+
+    .fielder-btn {
+        padding: 10px 8px;
+        min-width: 44px;
+    }
+
+    .pitch-type-btn {
+        padding: 8px 12px;
+    }
+
+    .pitch-outcome-btn {
+        padding: 8px 12px;
+    }
+
+    .base-adv-btn {
+        padding: 10px 8px;
+    }
+
+    .hand-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .out-num-btn-sm {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+    }
+
+    .rbi-btn-sm {
+        width: 34px;
+        height: 34px;
+    }
+
+    .quick-out-btn {
+        padding: 8px 14px;
+    }
+
+    .quick-out-pos-btn {
+        padding: 8px 6px;
+    }
+
+    /* Sticky player columns during horizontal scroll */
+    .cell-number {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: inherit;
+    }
+
+    .cell-player {
+        position: sticky;
+        left: 36px;
+        z-index: 2;
+        background: inherit;
+    }
+
+    .cell-pos {
+        position: sticky;
+        left: 176px;
+        z-index: 2;
+        background: inherit;
+    }
+
+    .grid-header-row .cell-number,
+    .grid-header-row .cell-player,
+    .grid-header-row .cell-pos {
+        z-index: 3;
+    }
+
+    /* Scroll shadow hint on grid */
+    .team-section {
+        position: relative;
+    }
+
+    .scorebook-grid {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ---- Responsive: Phone (≤600px) ---- */
+@media (max-width: 600px) {
+    html {
+        font-size: 14px;
+    }
+
+    .site-nav {
+        padding: 8px 10px;
+        gap: 10px;
+    }
+
+    .site-nav-logo {
+        height: 44px;
+        top: 4px;
+    }
+
+    .site-nav-links a {
+        padding: 5px 8px;
+        font-size: 0.78rem;
+    }
+
+    .version-tag {
+        display: none;
+    }
+
+    /* Full-screen modal */
+    .modal {
+        width: 100vw;
+        width: 100dvw;
+        max-width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: none;
+    }
+
+    .modal-new-game {
+        width: 100vw;
+        width: 100dvw;
+    }
+
+    /* Stack result layout vertically too */
+    .result-phase-layout {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .result-left-column {
+        flex: none;
+    }
+
+    .modal-diamond-preview .diamond-container {
+        width: 180px;
+        height: 180px;
+    }
+
+    /* Scorebook grid: smaller cells */
+    .cell-inning {
+        width: 64px;
+        min-height: 64px;
+    }
+
+    .cell-player {
+        width: 100px;
+        left: 32px;
+    }
+
+    .cell-number {
+        width: 32px;
+    }
+
+    .cell-pos {
+        left: 132px;
+    }
+
+    /* Base advance & quick-out popups: center on screen */
+    .base-advance-popup,
+    .quick-out-popup {
+        left: 50% !important;
+        top: auto !important;
+        bottom: 20px;
+        transform: translateX(-50%);
+        max-width: 90vw;
+    }
+
+    /* Inputs ≥16px to prevent iOS auto-zoom */
+    input, select, textarea {
+        font-size: 16px;
+    }
+}
+
+/* ---- Responsive: Small phone (≤400px) ---- */
+@media (max-width: 400px) {
+    html {
+        font-size: 13px;
+    }
+}
+
+/* ---- Landscape phone ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+    .combined-play-layout {
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .combined-left-col {
+        flex: 0 0 260px;
+        border-right: 1px solid var(--grid-line);
+        border-bottom: none;
+        padding-right: 8px;
+        padding-bottom: 0;
+    }
+}
 }

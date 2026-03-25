@@ -44,6 +44,47 @@
         return players;
     }
 
+    function emptyBases() {
+        return { first: false, second: false, third: false, home: false };
+    }
+
+    function getTeamData(team) {
+        return team === 'away' ? game.awayTeam : game.homeTeam;
+    }
+
+    function getOpposingTeam(team) {
+        return team === 'away' ? 'home' : 'away';
+    }
+
+    function getPitcherInfo(battingTeam) {
+        const pTeam = getOpposingTeam(battingTeam);
+        const pIdx = getTeamData(pTeam).currentPitcherIdx || 0;
+        return { team: pTeam, pitcherIdx: pIdx };
+    }
+
+    function createEmptyAtBat(battingTeam) {
+        return {
+            result: null,
+            fielderNotation: '',
+            bases: emptyBases(),
+            outNumber: 0,
+            rbiCount: 0,
+            notes: '',
+            sprayChart: null,
+            pitches: [],
+            count: { balls: 0, strikes: 0 },
+            batterHand: 'R',
+            runnerAdvancements: [],
+            pitcherInfo: battingTeam ? getPitcherInfo(battingTeam) : null
+        };
+    }
+
+    function getRunnerChoice(playerIdx, startBase) {
+        return pendingRunnerChoices.find(
+            c => c.playerIdx === playerIdx && c.startBase === startBase
+        );
+    }
+
     function atBatKey(team, playerIdx, inning) {
         return `${team}-${playerIdx}-${inning}`;
     }
@@ -206,7 +247,7 @@
         inning: null,
         result: null,
         fielders: [],
-        bases: { first: false, second: false, third: false, home: false },
+        bases: emptyBases(),
         outNumber: 0,
         rbiCount: 0,
         notes: '',
@@ -218,6 +259,21 @@
         currentPitchType: 'FB',
         batterHand: 'R'
     };
+
+    // ---- Mobile: Hamburger toggle ----
+    const navToggle = $('#nav-toggle');
+    const navActions = $('#site-nav-actions');
+    if (navToggle && navActions) {
+        navToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navActions.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!navActions.contains(e.target) && e.target !== navToggle) {
+                navActions.classList.remove('open');
+            }
+        });
+    }
 
     // ---- Render Scorebook Grid ----
     function renderGrid(gridEl, teamKey, teamData) {
@@ -346,7 +402,7 @@
                     let dragState = null;
                     let suppressClick = false;
 
-                    cell.addEventListener('mousedown', (e) => {
+                    cell.addEventListener('pointerdown', (e) => {
                         // Ignore if clicking on quick-add elements
                         const target = e.target;
                         if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
@@ -358,13 +414,14 @@
                         const svg = cell.querySelector('svg');
                         if (!svg) return;
                         e.preventDefault();
+                        cell.setPointerCapture(e.pointerId);
                         const rect = svg.getBoundingClientRect();
                         const vbX = (e.clientX - rect.left) * (64 / rect.width);
                         const vbY = (e.clientY - rect.top) * (64 / rect.height);
                         dragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false };
                     });
 
-                    document.addEventListener('mousemove', (e) => {
+                    cell.addEventListener('pointermove', (e) => {
                         if (!dragState) return;
                         const dx = e.clientX - dragState.startX;
                         const dy = e.clientY - dragState.startY;
@@ -372,8 +429,8 @@
                             dragState.dragged = true;
                         }
                         if (dragState.dragged) {
-                            // Live preview: compute spray style from drag direction
-                            const deltaY = dragState.startY - e.clientY; // positive = up
+                            // Live preview only — don't persist until pointerup
+                            const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
                                 style = 'air'; slider = Math.min(100, Math.round((deltaY - 5) * 1.5));
@@ -382,20 +439,18 @@
                             } else {
                                 style = 'ground'; slider = 0;
                             }
-                            // Update at-bat spray data and re-render cell SVG
+                            // Re-render SVG preview without saving to storage
                             const abPreview = getAtBat(team, pIdx, inning) || {};
-                            abPreview.sprayChart = { endX: dragState.vbX, endY: dragState.vbY, slider, style };
-                            setAtBat(team, pIdx, inning, abPreview);
-                            // Re-render just the diamond SVG
+                            const previewData = { ...abPreview, sprayChart: { endX: dragState.vbX, endY: dragState.vbY, slider, style } };
                             const container = cell.querySelector('.diamond-container');
                             if (container) {
                                 container.innerHTML = '';
-                                container.appendChild(Diamond.render(abPreview));
+                                container.appendChild(Diamond.render(previewData));
                             }
                         }
                     });
 
-                    document.addEventListener('mouseup', (e) => {
+                    cell.addEventListener('pointerup', (e) => {
                         if (!dragState) return;
                         const wasDrag = dragState.dragged;
                         if (wasDrag) {
@@ -718,7 +773,7 @@
 
     // ---- Play Modal ----
     function openPlayModal(team, playerIdx, inning) {
-        const teamData = team === 'away' ? game.awayTeam : game.homeTeam;
+        const teamData = getTeamData(team);
         const playerName = teamData.players[playerIdx].name || `Player ${playerIdx + 1}`;
         const teamName = teamData.name || (team === 'away' ? 'Visitors' : 'Home');
 
@@ -732,7 +787,7 @@
             inning,
             result: existing ? existing.result : null,
             fielders: existing && existing.fielderNotation ? parseFielderNotation(existing.fielderNotation) : [],
-            bases: existing ? { ...existing.bases } : { first: false, second: false, third: false, home: false },
+            bases: existing ? { ...existing.bases } : emptyBases(),
             outNumber: existing ? existing.outNumber : 0,
             rbiCount: existing ? existing.rbiCount : 0,
             notes: existing ? (existing.notes || '') : '',
@@ -754,6 +809,7 @@
 
         syncModalUI();
         playModal.hidden = false;
+        document.body.classList.add('modal-open');
     }
 
     function parseFielderNotation(notation) {
@@ -763,6 +819,7 @@
 
     function closePlayModal() {
         playModal.hidden = true;
+        document.body.classList.remove('modal-open');
     }
 
     function syncModalUI() {
@@ -852,12 +909,8 @@
             return;
         }
 
-        // Determine opposing pitcher
-        const pitcherTeam = editState.team === 'away' ? 'home' : 'away';
-        const pitcherTeamData = pitcherTeam === 'away' ? game.awayTeam : game.homeTeam;
-        const pitcherIdx = pitcherTeamData.currentPitcherIdx || 0;
-
         // Build the at-bat data
+        const pInfo = getPitcherInfo(editState.team);
         const playData = {
             result: editState.result,
             fielderNotation: displayNotation,
@@ -870,11 +923,11 @@
             count: Scoring.calcCount(editState.pitches),
             batterHand: editState.batterHand,
             runnerAdvancements: [],
-            pitcherInfo: { team: pitcherTeam, pitcherIdx }
+            pitcherInfo: pInfo
         };
 
         // Check for runners on base
-        const editTeamData = editState.team === 'away' ? game.awayTeam : game.homeTeam;
+        const editTeamData = getTeamData(editState.team);
         const runners = Scoring.getBaseRunners(
             game.atBats, editState.team, editState.inning,
             editState.playerIdx, editTeamData.players.length
@@ -943,23 +996,7 @@
 
         // Get or create at-bat
         if (!ab) {
-            const pTeam = team === 'away' ? 'home' : 'away';
-            const pTeamData = pTeam === 'away' ? game.awayTeam : game.homeTeam;
-            const pIdx = pTeamData.currentPitcherIdx || 0;
-            ab = {
-                result: null,
-                fielderNotation: '',
-                bases: { first: false, second: false, third: false, home: false },
-                outNumber: 0,
-                rbiCount: 0,
-                notes: '',
-                sprayChart: null,
-                pitches: [],
-                count: { balls: 0, strikes: 0 },
-                batterHand: 'R',
-                runnerAdvancements: [],
-                pitcherInfo: { team: pTeam, pitcherIdx: pIdx }
-            };
+            ab = createEmptyAtBat(team);
         }
 
         if (!ab.pitches) ab.pitches = [];
@@ -975,7 +1012,7 @@
                 ab.pitches = ab.pitches.filter(p => !['CS', 'SS', 'F'].includes(p.outcome));
                 ab.result = null;
                 ab.fielderNotation = '';
-                ab.bases = { first: false, second: false, third: false, home: false };
+                ab.bases = emptyBases();
                 ab.outNumber = 0;
             } else if (currentCount.strikes >= 2) {
                 // 2 strikes → 3rd strike → KL
@@ -1003,7 +1040,7 @@
                 ab.pitches = ab.pitches.filter(p => p.outcome !== 'B');
                 ab.result = null;
                 ab.fielderNotation = '';
-                ab.bases = { first: false, second: false, third: false, home: false };
+                ab.bases = emptyBases();
             } else if (currentCount.balls >= 3) {
                 // 3 balls → 4th ball → BB
                 ab.pitches.push({
@@ -1053,30 +1090,15 @@
             'HR':  { first: false, second: false, third: false, home: true }
         };
 
-        const bases = basesMap[result] || { first: false, second: false, third: false, home: false };
+        const bases = basesMap[result] || emptyBases();
 
-        // Determine opposing pitcher
-        const qPitcherTeam = team === 'away' ? 'home' : 'away';
-        const qPitcherTeamData = qPitcherTeam === 'away' ? game.awayTeam : game.homeTeam;
-        const qPitcherIdx = qPitcherTeamData.currentPitcherIdx || 0;
-
-        const playData = {
-            result: result,
-            fielderNotation: '',
-            bases: bases,
-            outNumber: 0,
-            rbiCount: result === 'HR' ? 1 : 0,
-            notes: '',
-            sprayChart: null,
-            pitches: [],
-            count: { balls: 0, strikes: 0 },
-            batterHand: 'R',
-            runnerAdvancements: [],
-            pitcherInfo: { team: qPitcherTeam, pitcherIdx: qPitcherIdx }
-        };
+        const playData = createEmptyAtBat(team);
+        playData.result = result;
+        playData.bases = bases;
+        playData.rbiCount = result === 'HR' ? 1 : 0;
 
         // Check for existing runners
-        const qaTeamData = team === 'away' ? game.awayTeam : game.homeTeam;
+        const qaTeamData = getTeamData(team);
         const runners = Scoring.getBaseRunners(
             game.atBats, team, inning, playerIdx, qaTeamData.players.length
         );
@@ -1242,7 +1264,7 @@
         const nextOut = countOutsInInning(team, inning) + 1;
         ab.outNumber = Math.min(nextOut, 3);
         // Half-line toward 1st (batter didn't reach)
-        ab.bases = ab.bases || { first: false, second: false, third: false, home: false };
+        ab.bases = ab.bases || emptyBases();
         setAtBat(team, playerIdx, inning, ab);
         closeQuickOutPopup();
         renderAll();
@@ -1275,7 +1297,7 @@
 
     function countOutsInInning(team, inning) {
         let outs = 0;
-        const teamData = team === 'away' ? game.awayTeam : game.homeTeam;
+        const teamData = getTeamData(team);
         const pc = teamData.players.length;
         for (let p = 0; p < pc; p++) {
             const ab = getAtBat(team, p, inning);
@@ -1298,19 +1320,8 @@
 
         let ab = getAtBat(team, playerIdx, inning);
         if (!ab) {
-            ab = {
-                result: reason,
-                fielderNotation: '',
-                bases: { first: false, second: false, third: false, home: false },
-                outNumber: 0,
-                rbiCount: 0,
-                notes: '',
-                sprayChart: null,
-                pitches: [],
-                count: { balls: 0, strikes: 0 },
-                batterHand: 'R',
-                runnerAdvancements: []
-            };
+            ab = createEmptyAtBat(team);
+            ab.result = reason;
         }
 
         const baseOrder = ['first', 'second', 'third', 'home'];
@@ -1362,17 +1373,7 @@
 
         let ab = getAtBat(team, playerIdx, inning);
         if (!ab) {
-            const pTeam = team === 'away' ? 'home' : 'away';
-            const pTeamData = pTeam === 'away' ? game.awayTeam : game.homeTeam;
-            const pIdx = pTeamData.currentPitcherIdx || 0;
-            ab = {
-                result: null, fielderNotation: '',
-                bases: { first: false, second: false, third: false, home: false },
-                outNumber: 0, rbiCount: 0, notes: '',
-                sprayChart: null, pitches: [], count: { balls: 0, strikes: 0 },
-                batterHand: 'R', runnerAdvancements: [],
-                pitcherInfo: { team: pTeam, pitcherIdx: pIdx }
-            };
+            ab = createEmptyAtBat(team);
         }
 
         if (reached === 'HBP') {
@@ -1401,7 +1402,7 @@
 
         // Handle runner advancement for plays that put batter on base
         if (reached !== 'D3S') {
-            const baTeamData = team === 'away' ? game.awayTeam : game.homeTeam;
+            const baTeamData = getTeamData(team);
             const runners = Scoring.getBaseRunners(game.atBats, team, inning, playerIdx, baTeamData.players.length);
             const anyRunners = runners.first !== null || runners.second !== null || runners.third !== null;
             if (anyRunners) {
@@ -1584,7 +1585,7 @@
     // ---- Runner Advancement Modal ----
 
     function openRunnerModal(ambiguousRunners, autoAdvancements) {
-        const teamData = editState.team === 'away' ? game.awayTeam : game.homeTeam;
+        const teamData = getTeamData(editState.team);
         runnerModalTitle.textContent = `Runners — Inning ${editState.inning}`;
         runnerRowsContainer.innerHTML = '';
 
@@ -1648,9 +1649,7 @@
                     btn.classList.add('active');
 
                     // Update pending choice
-                    const choice = pendingRunnerChoices.find(
-                        c => c.playerIdx === runner.playerIdx && c.startBase === runner.startBase
-                    );
+                    const choice = getRunnerChoice(runner.playerIdx, runner.startBase);
                     if (choice) {
                         choice.endBase = opt.endBase;
                         choice.out = opt.out;
@@ -1683,7 +1682,7 @@
                 rb.addEventListener('click', () => {
                     reasonRow.querySelectorAll('.runner-reason-btn').forEach(b => b.classList.remove('active'));
                     rb.classList.add('active');
-                    const choice = pendingRunnerChoices.find(c => c.playerIdx === runner.playerIdx && c.startBase === runner.startBase);
+                    const choice = getRunnerChoice(runner.playerIdx, runner.startBase);
                     if (choice) choice.outReason = reason;
                 });
                 reasonRow.appendChild(rb);
@@ -1704,7 +1703,7 @@
                     runnerFielders.push(pos);
                     fb.classList.add('active');
                     fielderDisplay.textContent = runnerFielders.join('-');
-                    const choice = pendingRunnerChoices.find(c => c.playerIdx === runner.playerIdx && c.startBase === runner.startBase);
+                    const choice = getRunnerChoice(runner.playerIdx, runner.startBase);
                     if (choice) choice.outFielders = runnerFielders.join('-');
                 });
                 fielderRow.appendChild(fb);
@@ -1716,7 +1715,7 @@
                 runnerFielders.length = 0;
                 fielderRow.querySelectorAll('.runner-fielder-btn').forEach(b => b.classList.remove('active'));
                 fielderDisplay.textContent = '';
-                const choice = pendingRunnerChoices.find(c => c.playerIdx === runner.playerIdx && c.startBase === runner.startBase);
+                const choice = getRunnerChoice(runner.playerIdx, runner.startBase);
                 if (choice) choice.outFielders = '';
             });
             fielderRow.appendChild(clearFb);
@@ -1731,7 +1730,7 @@
                 db.className = 'runner-dp-btn';
                 db.textContent = tag;
                 db.addEventListener('click', () => {
-                    const choice = pendingRunnerChoices.find(c => c.playerIdx === runner.playerIdx && c.startBase === runner.startBase);
+                    const choice = getRunnerChoice(runner.playerIdx, runner.startBase);
                     if (db.classList.contains('active')) {
                         db.classList.remove('active');
                         if (choice) choice.dpTag = null;
