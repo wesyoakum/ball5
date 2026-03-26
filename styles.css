@@ -3374,6 +3374,12 @@ body:has(.modal-overlay:not([hidden])) {
     touch-action: none;
 }
 
+.diamond-interactive {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;        /* prevent iOS callout menu on long-press */
+}
+
 /* ---- Phase 2: Hamburger toggle ---- */
 .nav-toggle {
     display: none;

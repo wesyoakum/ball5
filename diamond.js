@@ -604,6 +604,10 @@ const Diamond = (() => {
         const container = document.createElement('div');
         container.className = 'diamond-container diamond-interactive';
 
+        // Prevent text selection on long-press (mobile)
+        container.addEventListener('selectstart', (e) => e.preventDefault());
+        container.addEventListener('contextmenu', (e) => e.preventDefault());
+
         const svg = createSVG();
         svg.style.cursor = 'crosshair';
         const scored = atBat && atBat.bases && atBat.bases.home;
