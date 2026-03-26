@@ -3365,11 +3365,7 @@ body:has(.modal-overlay:not([hidden])) {
 }
 
 .cell-inning {
-    touch-action: pan-x pan-y;         /* allow scroll; JS handles drag via long-press */
-}
-
-.cell-inning.touch-dragging {
-    touch-action: none;                /* disable scroll only during active spray drag */
+    touch-action: manipulation;        /* allow scroll on touch; mouse drag handled in JS */
 }
 
 .diamond-container,

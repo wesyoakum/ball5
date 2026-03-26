@@ -398,79 +398,42 @@
                 }
 
                 // Click vs drag: drag = spray chart, click = quick-add or open modal
-                // On touch: long-press (200ms) activates spray drag mode; short tap = click
-                // On mouse: drag starts immediately (no long-press needed)
+                // On touch: tap goes straight to click handler (opens modal where
+                // the bigger diamond supports two-phase spray: tap to place, drag for arc)
+                // On mouse: drag = inline spray chart, click = quick-add or open modal
                 (function(cell, team, pIdx, inning) {
                     let dragState = null;
                     let suppressClick = false;
-                    let longPressTimer = null;
-                    const LONG_PRESS_MS = 200;
-
-                    function isTouch(e) { return e.pointerType === 'touch'; }
-
-                    function startDrag(e) {
-                        const svg = cell.querySelector('svg');
-                        if (!svg) return;
-                        cell.setPointerCapture(e.pointerId);
-                        cell.classList.add('touch-dragging');
-                        const rect = svg.getBoundingClientRect();
-                        const vbX = (e.clientX - rect.left) * (64 / rect.width);
-                        const vbY = (e.clientY - rect.top) * (64 / rect.height);
-                        dragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false, activated: true };
-                    }
 
                     cell.addEventListener('pointerdown', (e) => {
+                        // Touch: skip inline spray drag — let tap open modal instead
+                        if (e.pointerType === 'touch') return;
+
                         // Ignore if clicking on quick-add elements
                         const target = e.target;
                         if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
                             target.hasAttribute('data-base-click') ||
                             target.hasAttribute('data-quick-pitch')) {
-                            return; // let click handler deal with it
+                            return;
                         }
                         const svg = cell.querySelector('svg');
                         if (!svg) return;
-
-                        if (isTouch(e)) {
-                            // Touch: set up pending drag — wait for long-press
-                            const startX = e.clientX, startY = e.clientY;
-                            dragState = { startX, startY, vbX: 0, vbY: 0, dragged: false, activated: false, pointerId: e.pointerId };
-                            longPressTimer = setTimeout(() => {
-                                longPressTimer = null;
-                                // Vibrate briefly to indicate drag mode activated
-                                if (navigator.vibrate) navigator.vibrate(30);
-                                startDrag(e);
-                            }, LONG_PRESS_MS);
-                        } else {
-                            // Mouse: start drag immediately
-                            e.preventDefault();
-                            startDrag(e);
-                        }
+                        e.preventDefault();
+                        cell.setPointerCapture(e.pointerId);
+                        const rect = svg.getBoundingClientRect();
+                        const vbX = (e.clientX - rect.left) * (64 / rect.width);
+                        const vbY = (e.clientY - rect.top) * (64 / rect.height);
+                        dragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false };
                     });
 
                     cell.addEventListener('pointermove', (e) => {
                         if (!dragState) return;
-
-                        // If touch and drag not yet activated, check if finger moved too far (= scrolling)
-                        if (!dragState.activated) {
-                            const dx = e.clientX - dragState.startX;
-                            const dy = e.clientY - dragState.startY;
-                            if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-                                // User is scrolling — cancel pending drag
-                                clearTimeout(longPressTimer);
-                                longPressTimer = null;
-                                dragState = null;
-                                return;
-                            }
-                            return; // still waiting for long-press
-                        }
-
                         const dx = e.clientX - dragState.startX;
                         const dy = e.clientY - dragState.startY;
                         if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
                             dragState.dragged = true;
                         }
                         if (dragState.dragged) {
-                            // Live preview only — don't persist until pointerup
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -480,7 +443,6 @@
                             } else {
                                 style = 'ground'; slider = 0;
                             }
-                            // Re-render SVG preview without saving to storage
                             const abPreview = getAtBat(team, pIdx, inning) || {};
                             const previewData = { ...abPreview, sprayChart: { endX: dragState.vbX, endY: dragState.vbY, slider, style } };
                             const container = cell.querySelector('.diamond-container');
@@ -492,18 +454,9 @@
                     });
 
                     cell.addEventListener('pointerup', (e) => {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                        cell.classList.remove('touch-dragging');
-
-                        if (!dragState || !dragState.activated) {
-                            dragState = null;
-                            return; // was a tap, let click handler fire
-                        }
-
+                        if (!dragState) return;
                         const wasDrag = dragState.dragged;
                         if (wasDrag) {
-                            // Finalize spray chart
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -518,14 +471,7 @@
                             setAtBat(team, pIdx, inning, ab);
                             renderAll();
                         }
-                        if (wasDrag || dragState.activated) suppressClick = true;
-                        dragState = null;
-                    });
-
-                    cell.addEventListener('pointercancel', () => {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                        cell.classList.remove('touch-dragging');
+                        if (wasDrag) suppressClick = true;
                         dragState = null;
                     });
 
