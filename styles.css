@@ -3076,16 +3076,44 @@ body {
     border-radius: 0;
     cursor: grab;
     user-select: none;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.15s;
+    touch-action: pan-x;  /* allow horizontal scroll but we handle vertical drag */
 }
 
 .lineup-slot.dragging {
-    opacity: 0.4;
+    opacity: 0.3;
+    background: var(--grid-line-light);
 }
 
 .lineup-slot.drag-over {
     background: #eef2f8;
     border-bottom-color: var(--walk-color);
+}
+
+.lineup-slot-clone {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    opacity: 0.92;
+    transform: scale(1.03);
+    cursor: grabbing;
+    border: 2px solid var(--walk-color);
+    border-radius: 4px;
+}
+
+.lineup-slot-placeholder {
+    background: #e8ecf4;
+    border: 2px dashed var(--walk-color);
+    border-radius: 4px;
+    opacity: 0.5;
+    min-height: 36px;
+}
+
+.lineup-slot-grip {
+    font-size: 1.2rem;
+    color: var(--ink-light);
+    opacity: 0.4;
+    cursor: grab;
+    padding: 0 2px;
+    line-height: 1;
 }
 
 .lineup-slot-num {
@@ -3337,7 +3365,11 @@ body:has(.modal-overlay:not([hidden])) {
 }
 
 .cell-inning {
-    touch-action: none;                /* allow drag without scroll */
+    touch-action: pan-x pan-y;         /* allow scroll; JS handles drag via long-press */
+}
+
+.cell-inning.touch-dragging {
+    touch-action: none;                /* disable scroll only during active spray drag */
 }
 
 .diamond-container,
