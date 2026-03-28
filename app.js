@@ -2687,12 +2687,9 @@
         }
     });
 
-    // ---- Pinch-to-zoom on scorebook (mobile map-style navigation) ----
-    // Uses touch events so we can selectively preventDefault:
-    //   - At 1x, single finger = normal scroll (don't prevent)
-    //   - At 1x, two fingers = pinch zoom (prevent)
-    //   - When zoomed, single finger = pan (prevent), two fingers = pinch (prevent)
-    //   - Double-tap = toggle zoom
+    // ---- Floating zoom toggle for mobile scorebook ----
+    // Single button: tap to zoom in to editing level, tap again to zoom out.
+    // When zoomed, single finger pans around the sheet.
     function initZoomable(section) {
         const grid = section.querySelector('.scorebook-grid');
         if (!grid) return;
@@ -2704,23 +2701,20 @@
         grid.appendChild(wrapper);
         grid.classList.add('zoom-viewport');
 
+        const ZOOM_SCALE = 2.5;
         let scale = 1;
         let panX = 0, panY = 0;
-        const MIN_SCALE = 1;
-        const MAX_SCALE = 3;
 
-        // Pinch state
-        let pinchStartDist = 0;
-        let pinchStartScale = 1;
-        let pinchMidX = 0, pinchMidY = 0;
-        let isPinching = false;
-
-        // Pan state (single finger when zoomed)
+        // Pan state
         let panStart = null;
 
-        // Double-tap state
-        let lastTapTime = 0;
-        let lastTapX = 0, lastTapY = 0;
+        // Floating zoom button
+        const btn = document.createElement('button');
+        btn.className = 'zoom-toggle-btn';
+        btn.textContent = '\uD83D\uDD0D'; // magnifying glass
+        btn.setAttribute('aria-label', 'Toggle zoom');
+        section.style.position = 'relative';
+        section.appendChild(btn);
 
         function clampPan() {
             if (scale <= 1) { panX = 0; panY = 0; return; }
@@ -2734,63 +2728,48 @@
         }
 
         function applyTransform() {
-            if (scale <= 1 && panX === 0 && panY === 0) {
+            if (scale <= 1) {
                 wrapper.style.transform = '';
                 grid.classList.remove('zoom-active');
+                btn.textContent = '\uD83D\uDD0D';
+                btn.classList.remove('zoom-toggle-active');
             } else {
                 wrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
                 grid.classList.add('zoom-active');
+                btn.textContent = '\uD83D\uDD0D';
+                btn.classList.add('zoom-toggle-active');
             }
         }
 
-        function getTouchDist(t1, t2) {
-            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        }
-
-        grid.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                // Start pinch
-                isPinching = true;
-                panStart = null;
-                const t = e.touches;
-                pinchStartDist = getTouchDist(t[0], t[1]);
-                pinchStartScale = scale;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (scale > 1) {
+                // Zoom out
+                scale = 1; panX = 0; panY = 0;
+            } else {
+                // Zoom in — center roughly on the visible area
+                scale = ZOOM_SCALE;
+                // Pan to center the current scroll position
                 const gridRect = grid.getBoundingClientRect();
-                pinchMidX = (t[0].clientX + t[1].clientX) / 2 - gridRect.left;
-                pinchMidY = (t[0].clientY + t[1].clientY) / 2 - gridRect.top;
-                e.preventDefault();
-            } else if (e.touches.length === 1 && scale > 1) {
-                // Single finger pan when zoomed
+                panX = -(wrapper.scrollWidth * scale - gridRect.width) / 3;
+                panY = 0;
+                clampPan();
+            }
+            applyTransform();
+        });
+
+        // Single-finger pan when zoomed
+        grid.addEventListener('touchstart', (e) => {
+            if (scale <= 1) return; // let normal scroll happen
+            if (e.touches.length === 1) {
                 panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY };
                 e.preventDefault();
             }
-            // At 1x with single finger: don't prevent — allow normal scroll
         }, { passive: false });
 
         grid.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2) {
-                // Pinch zoom
-                const t = e.touches;
-                const dist = getTouchDist(t[0], t[1]);
-                if (pinchStartDist < 10) return;
-                let newScale = pinchStartScale * (dist / pinchStartDist);
-                newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-
-                const gridRect = grid.getBoundingClientRect();
-                const midX = (t[0].clientX + t[1].clientX) / 2 - gridRect.left;
-                const midY = (t[0].clientY + t[1].clientY) / 2 - gridRect.top;
-
-                // Zoom toward current pinch midpoint
-                const ratio = newScale / scale;
-                panX = midX - ratio * (midX - panX);
-                panY = midY - ratio * (midY - panY);
-                scale = newScale;
-
-                clampPan();
-                applyTransform();
-                e.preventDefault();
-            } else if (e.touches.length === 1 && panStart && scale > 1) {
-                // Single finger pan
+            if (scale <= 1 || !panStart) return;
+            if (e.touches.length === 1) {
                 const t = e.touches[0];
                 panX = panStart.panX + (t.clientX - panStart.x);
                 panY = panStart.panY + (t.clientY - panStart.y);
@@ -2798,61 +2777,10 @@
                 applyTransform();
                 e.preventDefault();
             }
-            // At 1x single finger: don't prevent — normal scroll
         }, { passive: false });
 
-        grid.addEventListener('touchend', (e) => {
-            if (e.touches.length === 0) {
-                // All fingers up
-                if (isPinching) {
-                    isPinching = false;
-                    // Snap back to 1x if close
-                    if (scale < 1.15) {
-                        scale = 1; panX = 0; panY = 0;
-                        applyTransform();
-                    }
-                }
-                panStart = null;
-
-                // Double-tap detection
-                if (e.changedTouches.length === 1 && !isPinching) {
-                    const touch = e.changedTouches[0];
-                    const now = Date.now();
-                    const dt = now - lastTapTime;
-                    const dx = touch.clientX - lastTapX;
-                    const dy = touch.clientY - lastTapY;
-
-                    if (dt < 350 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-                        e.preventDefault();
-                        const gridRect = grid.getBoundingClientRect();
-                        const tapX = touch.clientX - gridRect.left;
-                        const tapY = touch.clientY - gridRect.top;
-
-                        if (scale > 1.1) {
-                            // Zoom out
-                            scale = 1; panX = 0; panY = 0;
-                        } else {
-                            // Zoom in to 2.5x centered on tap
-                            const newScale = 2.5;
-                            const ratio = newScale / scale;
-                            panX = tapX - ratio * (tapX - panX);
-                            panY = tapY - ratio * (tapY - panY);
-                            scale = newScale;
-                            clampPan();
-                        }
-                        applyTransform();
-                        lastTapTime = 0;
-                        return;
-                    }
-
-                    lastTapTime = now;
-                    lastTapX = touch.clientX;
-                    lastTapY = touch.clientY;
-                }
-            } else if (e.touches.length === 1 && scale > 1) {
-                // Went from 2 fingers to 1 — start panning with remaining finger
-                panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY };
-            }
+        grid.addEventListener('touchend', () => {
+            panStart = null;
         });
     }
 

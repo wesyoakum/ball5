@@ -3374,15 +3374,13 @@ body:has(.modal-overlay:not([hidden])) {
     touch-action: none;
 }
 
-/* ---- Pinch-to-zoom viewport (map-style navigation) ---- */
+/* ---- Zoom viewport & floating toggle ---- */
 .zoom-viewport {
     position: relative;
-    -webkit-user-select: none;
-    user-select: none;
 }
 
 .zoom-viewport.zoom-active {
-    overflow: hidden;                  /* clip content when zoomed in */
+    overflow: hidden;
 }
 
 .zoom-content {
@@ -3390,6 +3388,35 @@ body:has(.modal-overlay:not([hidden])) {
     will-change: transform;
     display: flex;
     flex-direction: column;
+}
+
+.zoom-toggle-btn {
+    display: none;                     /* hidden on desktop, shown via media query */
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 100;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--grid-line-heavy);
+    background: var(--paper-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.15s, background 0.15s, transform 0.15s;
+}
+
+.zoom-toggle-btn:active {
+    transform: scale(0.92);
+}
+
+.zoom-toggle-btn.zoom-toggle-active {
+    background: var(--header-bg);
+    border-color: var(--header-bg);
+    opacity: 1;
 }
 
 /* ---- Phase 2: Hamburger toggle ---- */
@@ -3524,6 +3551,11 @@ body:has(.modal-overlay:not([hidden])) {
     .grid-header-row .cell-player,
     .grid-header-row .cell-pos {
         z-index: 3;
+    }
+
+    /* Show zoom toggle on touch-capable screens */
+    .zoom-toggle-btn {
+        display: block;
     }
 
     /* Scroll shadow hint on grid */
