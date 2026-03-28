@@ -3365,7 +3365,7 @@ body:has(.modal-overlay:not([hidden])) {
 }
 
 .cell-inning {
-    touch-action: manipulation;        /* allow scroll on touch; mouse drag handled in JS */
+    touch-action: none;                /* drag handled by JS (zoom viewport handles scroll) */
 }
 
 .diamond-container,
@@ -3374,10 +3374,22 @@ body:has(.modal-overlay:not([hidden])) {
     touch-action: none;
 }
 
-.diamond-interactive {
+/* ---- Pinch-to-zoom viewport (map-style navigation) ---- */
+.zoom-viewport {
+    position: relative;
     -webkit-user-select: none;
     user-select: none;
-    -webkit-touch-callout: none;        /* prevent iOS callout menu on long-press */
+}
+
+.zoom-viewport.zoom-active {
+    overflow: hidden;                  /* clip content when zoomed in */
+}
+
+.zoom-content {
+    transform-origin: 0 0;
+    will-change: transform;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ---- Phase 2: Hamburger toggle ---- */

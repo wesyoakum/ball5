@@ -398,24 +398,19 @@
                 }
 
                 // Click vs drag: drag = spray chart, click = quick-add or open modal
-                // On touch: tap goes straight to click handler (opens modal where
-                // the bigger diamond supports two-phase spray: tap to place, drag for arc)
-                // On mouse: drag = inline spray chart, click = quick-add or open modal
                 (function(cell, team, pIdx, inning) {
                     let dragState = null;
                     let suppressClick = false;
 
                     cell.addEventListener('pointerdown', (e) => {
-                        // Touch: skip inline spray drag — let tap open modal instead
-                        if (e.pointerType === 'touch') return;
-
                         // Ignore if clicking on quick-add elements
                         const target = e.target;
                         if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
                             target.hasAttribute('data-base-click') ||
                             target.hasAttribute('data-quick-pitch')) {
-                            return;
+                            return; // let click handler deal with it
                         }
+                        // Find the SVG in this cell
                         const svg = cell.querySelector('svg');
                         if (!svg) return;
                         e.preventDefault();
@@ -434,6 +429,7 @@
                             dragState.dragged = true;
                         }
                         if (dragState.dragged) {
+                            // Live preview only — don't persist until pointerup
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -443,6 +439,7 @@
                             } else {
                                 style = 'ground'; slider = 0;
                             }
+                            // Re-render SVG preview without saving to storage
                             const abPreview = getAtBat(team, pIdx, inning) || {};
                             const previewData = { ...abPreview, sprayChart: { endX: dragState.vbX, endY: dragState.vbY, slider, style } };
                             const container = cell.querySelector('.diamond-container');
@@ -457,6 +454,7 @@
                         if (!dragState) return;
                         const wasDrag = dragState.dragged;
                         if (wasDrag) {
+                            // Finalize spray chart
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -2688,6 +2686,180 @@
             if (!historyModal.hidden) historyModal.hidden = true;
         }
     });
+
+    // ---- Pinch-to-zoom on scorebook (mobile map-style navigation) ----
+    // Uses touch events so we can selectively preventDefault:
+    //   - At 1x, single finger = normal scroll (don't prevent)
+    //   - At 1x, two fingers = pinch zoom (prevent)
+    //   - When zoomed, single finger = pan (prevent), two fingers = pinch (prevent)
+    //   - Double-tap = toggle zoom
+    function initZoomable(section) {
+        const grid = section.querySelector('.scorebook-grid');
+        if (!grid) return;
+
+        // Wrap grid content for transform
+        const wrapper = document.createElement('div');
+        wrapper.className = 'zoom-content';
+        while (grid.firstChild) wrapper.appendChild(grid.firstChild);
+        grid.appendChild(wrapper);
+        grid.classList.add('zoom-viewport');
+
+        let scale = 1;
+        let panX = 0, panY = 0;
+        const MIN_SCALE = 1;
+        const MAX_SCALE = 3;
+
+        // Pinch state
+        let pinchStartDist = 0;
+        let pinchStartScale = 1;
+        let pinchMidX = 0, pinchMidY = 0;
+        let isPinching = false;
+
+        // Pan state (single finger when zoomed)
+        let panStart = null;
+
+        // Double-tap state
+        let lastTapTime = 0;
+        let lastTapX = 0, lastTapY = 0;
+
+        function clampPan() {
+            if (scale <= 1) { panX = 0; panY = 0; return; }
+            const rect = grid.getBoundingClientRect();
+            const contentW = wrapper.scrollWidth * scale;
+            const contentH = wrapper.scrollHeight * scale;
+            const maxPanX = Math.max(0, contentW - rect.width);
+            const maxPanY = Math.max(0, contentH - rect.height);
+            panX = Math.max(-maxPanX, Math.min(0, panX));
+            panY = Math.max(-maxPanY, Math.min(0, panY));
+        }
+
+        function applyTransform() {
+            if (scale <= 1 && panX === 0 && panY === 0) {
+                wrapper.style.transform = '';
+                grid.classList.remove('zoom-active');
+            } else {
+                wrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+                grid.classList.add('zoom-active');
+            }
+        }
+
+        function getTouchDist(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+
+        grid.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // Start pinch
+                isPinching = true;
+                panStart = null;
+                const t = e.touches;
+                pinchStartDist = getTouchDist(t[0], t[1]);
+                pinchStartScale = scale;
+                const gridRect = grid.getBoundingClientRect();
+                pinchMidX = (t[0].clientX + t[1].clientX) / 2 - gridRect.left;
+                pinchMidY = (t[0].clientY + t[1].clientY) / 2 - gridRect.top;
+                e.preventDefault();
+            } else if (e.touches.length === 1 && scale > 1) {
+                // Single finger pan when zoomed
+                panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY };
+                e.preventDefault();
+            }
+            // At 1x with single finger: don't prevent — allow normal scroll
+        }, { passive: false });
+
+        grid.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                const t = e.touches;
+                const dist = getTouchDist(t[0], t[1]);
+                if (pinchStartDist < 10) return;
+                let newScale = pinchStartScale * (dist / pinchStartDist);
+                newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+                const gridRect = grid.getBoundingClientRect();
+                const midX = (t[0].clientX + t[1].clientX) / 2 - gridRect.left;
+                const midY = (t[0].clientY + t[1].clientY) / 2 - gridRect.top;
+
+                // Zoom toward current pinch midpoint
+                const ratio = newScale / scale;
+                panX = midX - ratio * (midX - panX);
+                panY = midY - ratio * (midY - panY);
+                scale = newScale;
+
+                clampPan();
+                applyTransform();
+                e.preventDefault();
+            } else if (e.touches.length === 1 && panStart && scale > 1) {
+                // Single finger pan
+                const t = e.touches[0];
+                panX = panStart.panX + (t.clientX - panStart.x);
+                panY = panStart.panY + (t.clientY - panStart.y);
+                clampPan();
+                applyTransform();
+                e.preventDefault();
+            }
+            // At 1x single finger: don't prevent — normal scroll
+        }, { passive: false });
+
+        grid.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                // All fingers up
+                if (isPinching) {
+                    isPinching = false;
+                    // Snap back to 1x if close
+                    if (scale < 1.15) {
+                        scale = 1; panX = 0; panY = 0;
+                        applyTransform();
+                    }
+                }
+                panStart = null;
+
+                // Double-tap detection
+                if (e.changedTouches.length === 1 && !isPinching) {
+                    const touch = e.changedTouches[0];
+                    const now = Date.now();
+                    const dt = now - lastTapTime;
+                    const dx = touch.clientX - lastTapX;
+                    const dy = touch.clientY - lastTapY;
+
+                    if (dt < 350 && Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+                        e.preventDefault();
+                        const gridRect = grid.getBoundingClientRect();
+                        const tapX = touch.clientX - gridRect.left;
+                        const tapY = touch.clientY - gridRect.top;
+
+                        if (scale > 1.1) {
+                            // Zoom out
+                            scale = 1; panX = 0; panY = 0;
+                        } else {
+                            // Zoom in to 2.5x centered on tap
+                            const newScale = 2.5;
+                            const ratio = newScale / scale;
+                            panX = tapX - ratio * (tapX - panX);
+                            panY = tapY - ratio * (tapY - panY);
+                            scale = newScale;
+                            clampPan();
+                        }
+                        applyTransform();
+                        lastTapTime = 0;
+                        return;
+                    }
+
+                    lastTapTime = now;
+                    lastTapX = touch.clientX;
+                    lastTapY = touch.clientY;
+                }
+            } else if (e.touches.length === 1 && scale > 1) {
+                // Went from 2 fingers to 1 — start panning with remaining finger
+                panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY };
+            }
+        });
+    }
+
+    // Apply zoom to both team sections on touch-capable devices
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.querySelectorAll('.team-section').forEach(initZoomable);
+    }
 
     // ---- Render default game immediately (before async storage) ----
     renderAll();

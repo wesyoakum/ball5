@@ -604,10 +604,6 @@ const Diamond = (() => {
         const container = document.createElement('div');
         container.className = 'diamond-container diamond-interactive';
 
-        // Prevent text selection on long-press (mobile)
-        container.addEventListener('selectstart', (e) => e.preventDefault());
-        container.addEventListener('contextmenu', (e) => e.preventDefault());
-
         const svg = createSVG();
         svg.style.cursor = 'crosshair';
         const scored = atBat && atBat.bases && atBat.bases.home;
@@ -637,12 +633,10 @@ const Diamond = (() => {
         svg.appendChild(overlay);
 
         // Click-and-drag spray chart:
-        // Mouse: pointerdown = set endpoint, drag up = air (arc), drag down = ground (dashes)
-        // Touch: two-phase — tap to place dot, then drag from dot to set arc/dashes
+        // pointerdown = set endpoint, drag up = air (arc), drag down = ground (dashes)
         let dragging = false;
         let dragStartScreenY = 0;
         let sprayX = 0, sprayY = 0;
-        let placedSpray = null; // { x, y } - remembers placed dot for touch phase 2
 
         function screenToViewBox(e) {
             const rect = svg.getBoundingClientRect();
@@ -652,47 +646,16 @@ const Diamond = (() => {
             };
         }
 
-        function isTouch(e) { return e.pointerType === 'touch'; }
-
         svg.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             svg.setPointerCapture(e.pointerId);
-
-            if (isTouch(e)) {
-                const vb = screenToViewBox(e);
-
-                // Check if tapping near an already-placed dot (phase 2: adjust arc/dashes)
-                if (placedSpray) {
-                    const dx = vb.x - placedSpray.x;
-                    const dy = vb.y - placedSpray.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 10) {
-                        // Phase 2: start arc/dash drag from the placed dot
-                        sprayX = placedSpray.x;
-                        sprayY = placedSpray.y;
-                        dragStartScreenY = e.clientY;
-                        dragging = true;
-                        return;
-                    }
-                }
-
-                // Phase 1: place (or re-place) the hit dot
-                sprayX = vb.x;
-                sprayY = vb.y;
-                placedSpray = { x: vb.x, y: vb.y };
-                if (navigator.vibrate) navigator.vibrate(20);
-                // Commit location with no arc/dashes
-                if (onClick) onClick(sprayX, sprayY, 0, 'ground', false);
-                dragging = false;
-            } else {
-                // Mouse: original behavior — click sets location, drag sets arc/dashes
-                const vb = screenToViewBox(e);
-                sprayX = vb.x;
-                sprayY = vb.y;
-                dragStartScreenY = e.clientY;
-                dragging = true;
-                if (onClick) onClick(sprayX, sprayY, 0, 'ground', true);
-            }
+            const vb = screenToViewBox(e);
+            sprayX = vb.x;
+            sprayY = vb.y;
+            dragStartScreenY = e.clientY;
+            dragging = true;
+            // Immediately show with no arc/dash (just a click so far)
+            if (onClick) onClick(sprayX, sprayY, 0, 'ground', true); // true = preview
         });
 
         svg.addEventListener('pointermove', (e) => {
