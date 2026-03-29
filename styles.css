@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #1a8b5a;
+    --header-bg: #8b1a5a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -97,7 +97,7 @@ body {
     border-radius: 4px;
     margin-bottom: 4px;
     box-shadow: 2px 2px 8px var(--shadow);
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .team-header {
@@ -452,7 +452,7 @@ body {
     border-radius: 4px;
     margin-bottom: 4px;
     box-shadow: 2px 2px 8px var(--shadow);
-    overflow-x: auto;
+    overflow: visible;
     padding: 4px 12px;
 }
 
@@ -1929,7 +1929,7 @@ body {
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
     .team-section {
-        overflow-x: scroll;
+        overflow: visible;
     }
 
     .new-game-teams {
@@ -3396,14 +3396,6 @@ body.scorebook-zoomed .site-nav {
     width: 500%;
 }
 
-/* Remove ALL internal scroll containers so the whole page pans as one unit */
-body.scorebook-zoomed .scorebook,
-body.scorebook-zoomed .team-section,
-body.scorebook-zoomed .scorebook-grid {
-    overflow: visible !important;
-    -webkit-overflow-scrolling: auto !important;
-}
-
 /* When zoomed, all cells should scroll freely except the active one */
 body.scorebook-zoomed .cell-inning {
     touch-action: pan-x pan-y;
@@ -3570,8 +3562,7 @@ body.scorebook-zoomed .cell-inning.cell-active {
     }
 
     .scorebook-grid {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
     }
 }
 
