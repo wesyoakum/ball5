@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #444444;
+    --header-bg: #8b4513;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -85,10 +85,11 @@ body {
 
 /* ---- Scorebook main area ---- */
 .scorebook {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 16px;
     background: blue !important;       /* DEBUG: .scorebook (main) */
+    width: fit-content;
+    min-width: 100%;
 }
 
 /* ---- Team Section ---- */
@@ -99,6 +100,8 @@ body {
     margin-bottom: 4px;
     box-shadow: 2px 2px 8px var(--shadow);
     overflow: visible;
+    width: fit-content;
+    min-width: 100%;
 }
 
 .team-header {
