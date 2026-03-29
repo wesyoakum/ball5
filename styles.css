@@ -3366,7 +3366,14 @@ body:has(.modal-overlay:not([hidden])) {
 }
 
 .cell-inning {
-    touch-action: none;                /* drag handled by JS (zoom viewport handles scroll) */
+    touch-action: manipulation;        /* allow scroll by default */
+}
+
+.cell-inning.cell-active {
+    touch-action: none;                /* active cell handles drag for spray chart */
+    outline: 2px solid var(--header-bg);
+    outline-offset: -2px;
+    z-index: 4;
 }
 
 .diamond-container,
