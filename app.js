@@ -2725,7 +2725,7 @@
     // ---- Floating zoom toggle for mobile scorebook ----
     // If a cell is selected: zooms into that cell specifically.
     // If no cell selected: toggles full scorebook zoom.
-    // Uses CSS zoom so sticky columns & native scroll still work.
+    // Zooming out also deselects any active cell.
     function initMobileZoom() {
         const btn = document.createElement('button');
         btn.className = 'zoom-toggle-btn';
@@ -2747,6 +2747,7 @@
             document.body.classList.remove('scorebook-zoomed');
             btn.classList.remove('zoom-toggle-active');
             btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+            clearActiveCell();
         }
 
         btn.addEventListener('click', (e) => {
@@ -2757,7 +2758,6 @@
                 zoomIn();
                 // If a cell is selected, scroll it into view after zoom
                 if (activeCell) {
-                    // Small delay so the CSS zoom takes effect before scrolling
                     requestAnimationFrame(() => {
                         activeCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
                     });
