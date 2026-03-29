@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #5a1a8b;
+    --header-bg: #1a8b5a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3396,10 +3396,12 @@ body.scorebook-zoomed .site-nav {
     width: 500%;
 }
 
-/* Remove internal scroll containers so the whole page pans as one unit */
+/* Remove ALL internal scroll containers so the whole page pans as one unit */
+body.scorebook-zoomed .scorebook,
 body.scorebook-zoomed .team-section,
 body.scorebook-zoomed .scorebook-grid {
-    overflow: visible;
+    overflow: visible !important;
+    -webkit-overflow-scrolling: auto !important;
 }
 
 /* When zoomed, all cells should scroll freely except the active one */
