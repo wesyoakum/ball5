@@ -281,18 +281,117 @@
     let activeCell = null;
     let zoomBtn = null; // set by initMobileZoom
 
+    // Drag handlers for the active cell (spray chart)
+    let activeDragState = null;
+    let activeSuppressClick = false;
+    let activeDragHandlers = null;
+
+    function attachDragHandlers(cell) {
+        const team = cell.dataset.team;
+        const pIdx = parseInt(cell.dataset.playerIdx, 10);
+        const inning = parseInt(cell.dataset.inn, 10);
+
+        function onPointerDown(e) {
+            const target = e.target;
+            if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
+                target.hasAttribute('data-base-click') ||
+                target.hasAttribute('data-quick-pitch')) {
+                return;
+            }
+            const svg = cell.querySelector('svg');
+            if (!svg) return;
+            e.preventDefault();
+            cell.setPointerCapture(e.pointerId);
+            const rect = svg.getBoundingClientRect();
+            const vbX = (e.clientX - rect.left) * (64 / rect.width);
+            const vbY = (e.clientY - rect.top) * (64 / rect.height);
+            activeDragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false };
+        }
+
+        function onPointerMove(e) {
+            if (!activeDragState) return;
+            const dx = e.clientX - activeDragState.startX;
+            const dy = e.clientY - activeDragState.startY;
+            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+                activeDragState.dragged = true;
+            }
+            if (activeDragState.dragged) {
+                const deltaY = activeDragState.startY - e.clientY;
+                let style, slider;
+                if (deltaY > 5) {
+                    style = 'air'; slider = Math.min(100, Math.round((deltaY - 5) * 1.5));
+                } else if (deltaY < -5) {
+                    style = 'ground'; slider = Math.min(100, Math.round((-deltaY - 5) * 1.5));
+                } else {
+                    style = 'ground'; slider = 0;
+                }
+                const abPreview = getAtBat(team, pIdx, inning) || {};
+                const previewData = { ...abPreview, sprayChart: { endX: activeDragState.vbX, endY: activeDragState.vbY, slider, style } };
+                const container = cell.querySelector('.diamond-container');
+                if (container) {
+                    container.innerHTML = '';
+                    container.appendChild(Diamond.render(previewData));
+                }
+            }
+        }
+
+        function onPointerUp(e) {
+            if (!activeDragState) return;
+            const wasDrag = activeDragState.dragged;
+            if (wasDrag) {
+                const deltaY = activeDragState.startY - e.clientY;
+                let style, slider;
+                if (deltaY > 5) {
+                    style = 'air'; slider = Math.min(100, Math.round((deltaY - 5) * 1.5));
+                } else if (deltaY < -5) {
+                    style = 'ground'; slider = Math.min(100, Math.round((-deltaY - 5) * 1.5));
+                } else {
+                    style = 'ground'; slider = 0;
+                }
+                const ab = getAtBat(team, pIdx, inning) || {};
+                ab.sprayChart = { endX: activeDragState.vbX, endY: activeDragState.vbY, slider, style };
+                setAtBat(team, pIdx, inning, ab);
+                renderAll();
+            }
+            if (wasDrag) activeSuppressClick = true;
+            activeDragState = null;
+        }
+
+        cell.addEventListener('pointerdown', onPointerDown);
+        cell.addEventListener('pointermove', onPointerMove);
+        cell.addEventListener('pointerup', onPointerUp);
+
+        activeDragHandlers = { cell, onPointerDown, onPointerMove, onPointerUp };
+    }
+
+    function detachDragHandlers() {
+        if (activeDragHandlers) {
+            const { cell, onPointerDown, onPointerMove, onPointerUp } = activeDragHandlers;
+            cell.removeEventListener('pointerdown', onPointerDown);
+            cell.removeEventListener('pointermove', onPointerMove);
+            cell.removeEventListener('pointerup', onPointerUp);
+            activeDragHandlers = null;
+        }
+        activeDragState = null;
+    }
+
     function setActiveCell(cell) {
         if (activeCell && activeCell !== cell) {
             activeCell.classList.remove('cell-active');
+            detachDragHandlers();
         }
         activeCell = cell;
-        if (cell) cell.classList.add('cell-active');
+        if (cell) {
+            cell.classList.add('cell-active');
+            attachDragHandlers(cell);
+        }
         if (zoomBtn) zoomBtn.classList.toggle('zoom-toggle-visible', !!cell);
     }
 
     function clearActiveCell() {
         if (activeCell) {
             activeCell.classList.remove('cell-active');
+            detachDragHandlers();
             activeCell = null;
         }
         if (zoomBtn) zoomBtn.classList.remove('zoom-toggle-visible');
@@ -303,6 +402,47 @@
         if (activeCell && !e.target.closest('.cell-inning')) {
             clearActiveCell();
         }
+    });
+
+    // Delegated click handler for all score cells (no per-cell listeners needed)
+    document.addEventListener('click', (e) => {
+        const cell = e.target.closest('.cell-inning:not(.header-cell)');
+        if (!cell || !cell.dataset.team) return;
+        if (activeSuppressClick) { activeSuppressClick = false; return; }
+
+        const team = cell.dataset.team;
+        const pIdx = parseInt(cell.dataset.playerIdx, 10);
+        const inning = parseInt(cell.dataset.inn, 10);
+
+        // Touch: first tap selects, second tap opens modal
+        if ('ontouchstart' in window && activeCell !== cell) {
+            e.stopPropagation();
+            setActiveCell(cell);
+            return;
+        }
+
+        const target = e.target;
+        if (target.tagName === 'text' && target.hasAttribute('data-quick-result')) {
+            e.stopPropagation();
+            quickAddPlay(team, pIdx, inning, target.getAttribute('data-quick-result'));
+            return;
+        }
+        if (target.hasAttribute('data-base-click')) {
+            e.stopPropagation();
+            openBaseAdvancePopup(e, team, pIdx, inning, target.getAttribute('data-base-click'));
+            return;
+        }
+        if (target.hasAttribute('data-quick-pitch')) {
+            e.stopPropagation();
+            quickAddPitch(team, pIdx, inning, target.getAttribute('data-quick-pitch'));
+            return;
+        }
+        if (target.hasAttribute('data-quick-out')) {
+            e.stopPropagation();
+            openQuickOutPopup(e, team, pIdx, inning);
+            return;
+        }
+        openPlayModal(team, pIdx, inning);
     });
 
     // ---- Render Scorebook Grid ----
@@ -427,132 +567,10 @@
                     innCell.appendChild(container);
                 }
 
-                // Click vs drag: drag = spray chart, click = quick-add or open modal
-                // Touch: first tap selects cell (allows drag/edit), second tap opens modal.
-                // Mouse: works immediately as before (no two-tap).
-                (function(cell, team, pIdx, inning) {
-                    let dragState = null;
-                    let suppressClick = false;
-                    let touchStartPos = null;
-
-                    cell.addEventListener('pointerdown', (e) => {
-                        // Track touch start position for tap detection
-                        if (e.pointerType === 'touch') {
-                            touchStartPos = { x: e.clientX, y: e.clientY };
-                        }
-
-                        // On touch, only handle drag if this cell is active
-                        if (e.pointerType === 'touch' && activeCell !== cell) return;
-
-                        const target = e.target;
-                        if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
-                            target.hasAttribute('data-base-click') ||
-                            target.hasAttribute('data-quick-pitch')) {
-                            return;
-                        }
-                        const svg = cell.querySelector('svg');
-                        if (!svg) return;
-                        e.preventDefault();
-                        cell.setPointerCapture(e.pointerId);
-                        const rect = svg.getBoundingClientRect();
-                        const vbX = (e.clientX - rect.left) * (64 / rect.width);
-                        const vbY = (e.clientY - rect.top) * (64 / rect.height);
-                        dragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false };
-                    });
-
-                    cell.addEventListener('pointermove', (e) => {
-                        if (!dragState) return;
-                        const dx = e.clientX - dragState.startX;
-                        const dy = e.clientY - dragState.startY;
-                        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-                            dragState.dragged = true;
-                        }
-                        if (dragState.dragged) {
-                            const deltaY = dragState.startY - e.clientY;
-                            let style, slider;
-                            if (deltaY > 5) {
-                                style = 'air'; slider = Math.min(100, Math.round((deltaY - 5) * 1.5));
-                            } else if (deltaY < -5) {
-                                style = 'ground'; slider = Math.min(100, Math.round((-deltaY - 5) * 1.5));
-                            } else {
-                                style = 'ground'; slider = 0;
-                            }
-                            const abPreview = getAtBat(team, pIdx, inning) || {};
-                            const previewData = { ...abPreview, sprayChart: { endX: dragState.vbX, endY: dragState.vbY, slider, style } };
-                            const container = cell.querySelector('.diamond-container');
-                            if (container) {
-                                container.innerHTML = '';
-                                container.appendChild(Diamond.render(previewData));
-                            }
-                        }
-                    });
-
-                    cell.addEventListener('pointerup', (e) => {
-                        if (!dragState) return;
-                        const wasDrag = dragState.dragged;
-                        if (wasDrag) {
-                            const deltaY = dragState.startY - e.clientY;
-                            let style, slider;
-                            if (deltaY > 5) {
-                                style = 'air'; slider = Math.min(100, Math.round((deltaY - 5) * 1.5));
-                            } else if (deltaY < -5) {
-                                style = 'ground'; slider = Math.min(100, Math.round((-deltaY - 5) * 1.5));
-                            } else {
-                                style = 'ground'; slider = 0;
-                            }
-                            const ab = getAtBat(team, pIdx, inning) || {};
-                            ab.sprayChart = { endX: dragState.vbX, endY: dragState.vbY, slider, style };
-                            setAtBat(team, pIdx, inning, ab);
-                            renderAll();
-                        }
-                        if (wasDrag) suppressClick = true;
-                        dragState = null;
-                    });
-
-                    cell.addEventListener('pointerup', (e) => {
-                        // Touch two-tap: detect true taps (no movement) to select cell
-                        if (e.pointerType === 'touch' && activeCell !== cell && touchStartPos) {
-                            const dx = e.clientX - touchStartPos.x;
-                            const dy = e.clientY - touchStartPos.y;
-                            touchStartPos = null;
-                            // Only select cell if finger didn't move (true tap, not scroll)
-                            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
-                                e.stopPropagation();
-                                setActiveCell(cell);
-                                suppressClick = true;
-                            }
-                            return;
-                        }
-                        touchStartPos = null;
-                    });
-
-                    cell.addEventListener('click', (e) => {
-                        if (suppressClick) { suppressClick = false; return; }
-
-                        const target = e.target;
-                        if (target.tagName === 'text' && target.hasAttribute('data-quick-result')) {
-                            e.stopPropagation();
-                            quickAddPlay(team, pIdx, inning, target.getAttribute('data-quick-result'));
-                            return;
-                        }
-                        if (target.hasAttribute('data-base-click')) {
-                            e.stopPropagation();
-                            openBaseAdvancePopup(e, team, pIdx, inning, target.getAttribute('data-base-click'));
-                            return;
-                        }
-                        if (target.hasAttribute('data-quick-pitch')) {
-                            e.stopPropagation();
-                            quickAddPitch(team, pIdx, inning, target.getAttribute('data-quick-pitch'));
-                            return;
-                        }
-                        if (target.hasAttribute('data-quick-out')) {
-                            e.stopPropagation();
-                            openQuickOutPopup(e, team, pIdx, inning);
-                            return;
-                        }
-                        openPlayModal(team, pIdx, inning);
-                    });
-                })(innCell, teamKey, p, inn);
+                // Store cell metadata as data attributes for event delegation
+                innCell.dataset.team = teamKey;
+                innCell.dataset.playerIdx = p;
+                innCell.dataset.inn = inn;
                 row.appendChild(innCell);
             }
 
