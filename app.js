@@ -2688,30 +2688,9 @@
     });
 
     // ---- Floating zoom toggle for mobile scorebook ----
-    // Single fixed button: tap to zoom in to editing level, tap again to zoom out.
-    // When zoomed, single finger pans around the sheet.
+    // Toggles a CSS class that enlarges grid cells for easier touch interaction.
+    // Uses real sizing (not CSS transform) so sticky columns and native scroll still work.
     function initMobileZoom() {
-        const sections = document.querySelectorAll('.team-section');
-        const grids = [];
-
-        sections.forEach(section => {
-            const grid = section.querySelector('.scorebook-grid');
-            if (!grid) return;
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'zoom-content';
-            while (grid.firstChild) wrapper.appendChild(grid.firstChild);
-            grid.appendChild(wrapper);
-            grid.classList.add('zoom-viewport');
-
-            grids.push({ section, grid, wrapper, scale: 1, panX: 0, panY: 0, panStart: null });
-        });
-
-        if (!grids.length) return;
-
-        const ZOOM_SCALE = 2.5;
-
-        // Single fixed button on the page
         const btn = document.createElement('button');
         btn.className = 'zoom-toggle-btn';
         btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
@@ -2720,75 +2699,14 @@
 
         let zoomed = false;
 
-        function clampPan(g) {
-            if (g.scale <= 1) { g.panX = 0; g.panY = 0; return; }
-            const rect = g.grid.getBoundingClientRect();
-            const contentW = g.wrapper.scrollWidth * g.scale;
-            const contentH = g.wrapper.scrollHeight * g.scale;
-            const maxPanX = Math.max(0, contentW - rect.width);
-            const maxPanY = Math.max(0, contentH - rect.height);
-            g.panX = Math.max(-maxPanX, Math.min(0, g.panX));
-            g.panY = Math.max(-maxPanY, Math.min(0, g.panY));
-        }
-
-        function applyTransform(g) {
-            if (g.scale <= 1) {
-                g.wrapper.style.transform = '';
-                g.grid.classList.remove('zoom-active');
-            } else {
-                g.wrapper.style.transform = `translate(${g.panX}px, ${g.panY}px) scale(${g.scale})`;
-                g.grid.classList.add('zoom-active');
-            }
-        }
-
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             zoomed = !zoomed;
-            grids.forEach(g => {
-                if (zoomed) {
-                    g.scale = ZOOM_SCALE;
-                    const gridRect = g.grid.getBoundingClientRect();
-                    g.panX = -(g.wrapper.scrollWidth * g.scale - gridRect.width) / 3;
-                    g.panY = 0;
-                    clampPan(g);
-                } else {
-                    g.scale = 1; g.panX = 0; g.panY = 0;
-                }
-                applyTransform(g);
-            });
+            document.body.classList.toggle('scorebook-zoomed', zoomed);
             btn.classList.toggle('zoom-toggle-active', zoomed);
-            if (zoomed) {
-                btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
-            } else {
-                btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
-            }
-        });
-
-        // Single-finger pan when zoomed
-        grids.forEach(g => {
-            g.grid.addEventListener('touchstart', (e) => {
-                if (g.scale <= 1) return;
-                if (e.touches.length === 1) {
-                    g.panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: g.panX, panY: g.panY };
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            g.grid.addEventListener('touchmove', (e) => {
-                if (g.scale <= 1 || !g.panStart) return;
-                if (e.touches.length === 1) {
-                    const t = e.touches[0];
-                    g.panX = g.panStart.panX + (t.clientX - g.panStart.x);
-                    g.panY = g.panStart.panY + (t.clientY - g.panStart.y);
-                    clampPan(g);
-                    applyTransform(g);
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            g.grid.addEventListener('touchend', () => {
-                g.panStart = null;
-            });
+            btn.innerHTML = zoomed
+                ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>'
+                : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
         });
     }
 
