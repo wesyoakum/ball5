@@ -3522,34 +3522,6 @@ body:has(.modal-overlay:not([hidden])) {
         padding: 8px 6px;
     }
 
-    /* Sticky player columns during horizontal scroll */
-    .cell-number {
-        position: sticky;
-        left: 0;
-        z-index: 2;
-        background: inherit;
-    }
-
-    .cell-player {
-        position: sticky;
-        left: 36px;
-        z-index: 2;
-        background: inherit;
-    }
-
-    .cell-pos {
-        position: sticky;
-        left: 176px;
-        z-index: 2;
-        background: inherit;
-    }
-
-    .grid-header-row .cell-number,
-    .grid-header-row .cell-player,
-    .grid-header-row .cell-pos {
-        z-index: 3;
-    }
-
     /* Show zoom toggle on touch-capable screens */
     .zoom-toggle-btn {
         display: flex;
