@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #1a3a8b;
+    --header-bg: #8b5a1a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3388,6 +3388,12 @@ body.scorebook-zoomed {
     zoom: 5;
     -moz-transform: scale(5);
     -moz-transform-origin: 0 0;
+}
+
+/* Keep header bar at normal size when zoomed */
+body.scorebook-zoomed .site-nav {
+    zoom: 0.2;                         /* 5 * 0.2 = 1.0 effective */
+    width: 500%;
 }
 
 /* When zoomed, all cells should scroll freely except the active one */
