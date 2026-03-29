@@ -275,6 +275,33 @@
         });
     }
 
+    // ---- Active cell tracking (tap-to-select on touch) ----
+    // First tap selects a cell (makes it editable), second tap opens modal.
+    // Non-active cells allow scrolling; only active cell captures touch for drag.
+    let activeCell = null;
+
+    function setActiveCell(cell) {
+        if (activeCell && activeCell !== cell) {
+            activeCell.classList.remove('cell-active');
+        }
+        activeCell = cell;
+        if (cell) cell.classList.add('cell-active');
+    }
+
+    function clearActiveCell() {
+        if (activeCell) {
+            activeCell.classList.remove('cell-active');
+            activeCell = null;
+        }
+    }
+
+    // Tapping outside any cell clears the selection
+    document.addEventListener('click', (e) => {
+        if (activeCell && !e.target.closest('.cell-inning')) {
+            clearActiveCell();
+        }
+    });
+
     // ---- Render Scorebook Grid ----
     function renderGrid(gridEl, teamKey, teamData) {
         // Remove existing player rows (keep header)
@@ -398,19 +425,22 @@
                 }
 
                 // Click vs drag: drag = spray chart, click = quick-add or open modal
+                // Touch: first tap selects cell (allows drag/edit), second tap opens modal.
+                // Mouse: works immediately as before (no two-tap).
                 (function(cell, team, pIdx, inning) {
                     let dragState = null;
                     let suppressClick = false;
 
                     cell.addEventListener('pointerdown', (e) => {
-                        // Ignore if clicking on quick-add elements
+                        // On touch, only handle drag if this cell is active
+                        if (e.pointerType === 'touch' && activeCell !== cell) return;
+
                         const target = e.target;
                         if ((target.tagName === 'text' && target.hasAttribute('data-quick-result')) ||
                             target.hasAttribute('data-base-click') ||
                             target.hasAttribute('data-quick-pitch')) {
-                            return; // let click handler deal with it
+                            return;
                         }
-                        // Find the SVG in this cell
                         const svg = cell.querySelector('svg');
                         if (!svg) return;
                         e.preventDefault();
@@ -429,7 +459,6 @@
                             dragState.dragged = true;
                         }
                         if (dragState.dragged) {
-                            // Live preview only — don't persist until pointerup
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -439,7 +468,6 @@
                             } else {
                                 style = 'ground'; slider = 0;
                             }
-                            // Re-render SVG preview without saving to storage
                             const abPreview = getAtBat(team, pIdx, inning) || {};
                             const previewData = { ...abPreview, sprayChart: { endX: dragState.vbX, endY: dragState.vbY, slider, style } };
                             const container = cell.querySelector('.diamond-container');
@@ -454,7 +482,6 @@
                         if (!dragState) return;
                         const wasDrag = dragState.dragged;
                         if (wasDrag) {
-                            // Finalize spray chart
                             const deltaY = dragState.startY - e.clientY;
                             let style, slider;
                             if (deltaY > 5) {
@@ -475,6 +502,14 @@
 
                     cell.addEventListener('click', (e) => {
                         if (suppressClick) { suppressClick = false; return; }
+
+                        // Touch two-tap: first tap selects, second tap acts
+                        if ('ontouchstart' in window && activeCell !== cell) {
+                            e.stopPropagation();
+                            setActiveCell(cell);
+                            return;
+                        }
+
                         const target = e.target;
                         if (target.tagName === 'text' && target.hasAttribute('data-quick-result')) {
                             e.stopPropagation();
