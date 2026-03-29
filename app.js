@@ -2760,11 +2760,23 @@
                 zoomOut();
             } else {
                 zoomIn();
-                // If a cell is selected, scroll it into view after zoom
+                // If a cell is selected, scroll it into view after zoom renders
                 if (activeCell) {
-                    requestAnimationFrame(() => {
-                        activeCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-                    });
+                    setTimeout(() => {
+                        const zoomLevel = 5;
+                        const rect = activeCell.getBoundingClientRect();
+                        // getBoundingClientRect returns zoomed coords, so divide by zoom for true page position
+                        const cellTop = (window.scrollY + rect.top) / zoomLevel;
+                        const cellLeft = (window.scrollX + rect.left) / zoomLevel;
+                        const cellW = rect.width / zoomLevel;
+                        const cellH = rect.height / zoomLevel;
+                        // Scroll so cell is centered in viewport (viewport is also shrunk by zoom)
+                        const vpW = window.innerWidth / zoomLevel;
+                        const vpH = window.innerHeight / zoomLevel;
+                        const scrollX = (cellLeft + cellW / 2) - vpW / 2;
+                        const scrollY = (cellTop + cellH / 2) - vpH / 2;
+                        window.scrollTo({ left: scrollX, top: scrollY, behavior: 'smooth' });
+                    }, 100);
                 }
             }
         });
