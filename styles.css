@@ -3386,8 +3386,8 @@ body:has(.modal-overlay:not([hidden])) {
 /* When .scorebook-zoomed is on body, the entire scorebook scales up.
    Uses CSS zoom (not transform) so sticky columns & native scroll still work. */
 .scorebook-zoomed .scorebook {
-    zoom: 2;
-    -moz-transform: scale(2);
+    zoom: 3;
+    -moz-transform: scale(3);
     -moz-transform-origin: 0 0;
 }
 
