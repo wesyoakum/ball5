@@ -633,7 +633,7 @@ const Diamond = (() => {
         svg.appendChild(overlay);
 
         // Click-and-drag spray chart:
-        // mousedown = set endpoint, drag up = air (arc), drag down = ground (dashes)
+        // pointerdown = set endpoint, drag up = air (arc), drag down = ground (dashes)
         let dragging = false;
         let dragStartScreenY = 0;
         let sprayX = 0, sprayY = 0;
@@ -663,11 +663,9 @@ const Diamond = (() => {
             const deltaY = dragStartScreenY - e.clientY; // positive = dragged up
             let style, slider;
             if (deltaY > 5) {
-                // Dragged up = air, arc amount scales with distance
                 style = 'air';
                 slider = Math.min(100, Math.round((deltaY - 5) * 1.2));
             } else if (deltaY < -5) {
-                // Dragged down = ground, dash intensity scales with distance
                 style = 'ground';
                 slider = Math.min(100, Math.round((-deltaY - 5) * 1.2));
             } else {

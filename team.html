@@ -11,7 +11,7 @@
 </head>
 <body>
     <nav class="site-nav">
-        <img src="Ball5 Logo.png" alt="Ball5" class="site-nav-logo">
+        <img src="Ball5 Logo.png" alt="Ball5" class="site-nav-logo" onclick="location.reload(true)" role="button" tabindex="0">
         <div class="site-nav-links">
             <a href="index.html">Scorebook</a>
             <a href="teams.html" class="active">Teams</a>
@@ -43,7 +43,7 @@
                     <tbody id="roster-body"></tbody>
                 </table>
                 <button class="btn-add-row" id="btn-add-roster">+ Add Player</button>
-                <p class="roster-hint">Click a player to add to lineup. Drag to reorder lineup.</p>
+                <p class="roster-hint">Tap a player to add to lineup. Hold &amp; drag to reorder lineup.</p>
             </div>
 
             <!-- Right: Lineup Card -->
@@ -229,8 +229,9 @@
             if (inputs.length) inputs[inputs.length - 1].focus();
         });
 
-        // ---- Lineup Builder (Drag & Drop) ----
-        let dragSrcIdx = null;
+        // ---- Lineup Builder (Touch-friendly Drag & Drop) ----
+        // Uses pointer events instead of HTML5 DnD so it works on mobile/touch
+        let touchDrag = null; // { srcIdx, clone, placeholder, startY, pointerId }
 
         function addPlayerToLineup(rosterPlayer) {
             const rp = rosterPlayer;
@@ -241,6 +242,33 @@
             });
             renderLineup();
             renderRoster(); // update dimming
+        }
+
+        function getSlotAtY(y) {
+            const container = $('#lineup-builder');
+            const slots = container.querySelectorAll('.lineup-slot:not(.lineup-slot-placeholder)');
+            for (const slot of slots) {
+                const rect = slot.getBoundingClientRect();
+                if (y >= rect.top && y <= rect.bottom) return slot;
+                // If above first slot, return first
+                if (y < rect.top) return slot;
+            }
+            // Below all slots — return last
+            return slots.length ? slots[slots.length - 1] : null;
+        }
+
+        function cleanupDrag() {
+            if (!touchDrag) return;
+            if (touchDrag.clone && touchDrag.clone.parentNode) {
+                touchDrag.clone.parentNode.removeChild(touchDrag.clone);
+            }
+            const container = $('#lineup-builder');
+            const ph = container.querySelector('.lineup-slot-placeholder');
+            if (ph) ph.remove();
+            container.querySelectorAll('.lineup-slot').forEach(s => {
+                s.classList.remove('dragging', 'drag-over');
+            });
+            touchDrag = null;
         }
 
         function renderLineup() {
@@ -262,40 +290,130 @@
             for (let i = 0; i < lineup.length; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'lineup-slot';
-                slot.draggable = true;
                 slot.dataset.idx = i;
 
-                // Drag to reorder
-                slot.addEventListener('dragstart', (e) => {
-                    dragSrcIdx = i;
-                    e.dataTransfer.effectAllowed = 'move';
-                    slot.classList.add('dragging');
+                // Drag handle area — the whole slot is draggable via pointer events
+                let longPressTimer = null;
+
+                slot.addEventListener('pointerdown', (e) => {
+                    // Don't start drag from inputs or buttons
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                    const idx = parseInt(slot.dataset.idx);
+                    const startY = e.clientY;
+                    const startX = e.clientX;
+
+                    // Start drag after a short hold (150ms) to distinguish from scroll
+                    longPressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        slot.setPointerCapture(e.pointerId);
+
+                        // Create floating clone
+                        const rect = slot.getBoundingClientRect();
+                        const clone = slot.cloneNode(true);
+                        clone.className = 'lineup-slot lineup-slot-clone';
+                        clone.style.position = 'fixed';
+                        clone.style.left = rect.left + 'px';
+                        clone.style.top = rect.top + 'px';
+                        clone.style.width = rect.width + 'px';
+                        clone.style.zIndex = '9999';
+                        clone.style.pointerEvents = 'none';
+                        document.body.appendChild(clone);
+
+                        // Insert placeholder
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'lineup-slot lineup-slot-placeholder';
+                        placeholder.style.height = rect.height + 'px';
+                        slot.parentNode.insertBefore(placeholder, slot);
+
+                        slot.classList.add('dragging');
+
+                        touchDrag = {
+                            srcIdx: idx,
+                            clone,
+                            placeholder,
+                            startY,
+                            offsetY: e.clientY - rect.top,
+                            pointerId: e.pointerId,
+                            rect
+                        };
+                    }, 150);
+
+                    // If finger moves too far before timer fires, cancel (user is scrolling)
+                    const cancelOnMove = (me) => {
+                        if (Math.abs(me.clientX - startX) > 10 || Math.abs(me.clientY - startY) > 10) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                            slot.removeEventListener('pointermove', cancelOnMove);
+                        }
+                    };
+                    slot.addEventListener('pointermove', cancelOnMove, { once: false });
+
+                    // Clean up move-cancel listener on pointerup
+                    slot.addEventListener('pointerup', () => {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                        slot.removeEventListener('pointermove', cancelOnMove);
+                    }, { once: true });
                 });
-                slot.addEventListener('dragend', () => {
-                    slot.classList.remove('dragging');
-                    container.querySelectorAll('.lineup-slot').forEach(s => s.classList.remove('drag-over'));
-                });
-                slot.addEventListener('dragover', (e) => {
+
+                slot.addEventListener('pointermove', (e) => {
+                    if (!touchDrag || touchDrag.srcIdx !== parseInt(slot.dataset.idx)) return;
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    slot.classList.add('drag-over');
-                });
-                slot.addEventListener('dragleave', () => {
-                    slot.classList.remove('drag-over');
-                });
-                slot.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    slot.classList.remove('drag-over');
-                    if (dragSrcIdx !== null && dragSrcIdx !== i) {
-                        const moved = lineup.splice(dragSrcIdx, 1)[0];
-                        lineup.splice(i, 0, moved);
-                        renderLineup();
+
+                    // Move floating clone
+                    touchDrag.clone.style.top = (e.clientY - touchDrag.offsetY) + 'px';
+
+                    // Find which slot we're over and move placeholder there
+                    const overSlot = getSlotAtY(e.clientY);
+                    if (overSlot && overSlot !== touchDrag.placeholder && !overSlot.classList.contains('dragging')) {
+                        const overRect = overSlot.getBoundingClientRect();
+                        const midY = overRect.top + overRect.height / 2;
+                        if (e.clientY < midY) {
+                            container.insertBefore(touchDrag.placeholder, overSlot);
+                        } else {
+                            container.insertBefore(touchDrag.placeholder, overSlot.nextSibling);
+                        }
                     }
+                });
+
+                slot.addEventListener('pointerup', (e) => {
+                    if (!touchDrag || touchDrag.srcIdx !== parseInt(slot.dataset.idx)) return;
+
+                    // Determine new index from placeholder position
+                    const slots = Array.from(container.querySelectorAll('.lineup-slot:not(.lineup-slot-placeholder):not(.dragging)'));
+                    const phIdx = Array.from(container.children).indexOf(touchDrag.placeholder);
+                    // Count non-placeholder, non-dragging slots before placeholder
+                    let newIdx = 0;
+                    for (const child of container.children) {
+                        if (child === touchDrag.placeholder) break;
+                        if (!child.classList.contains('dragging') && !child.classList.contains('lineup-slot-placeholder')) {
+                            newIdx++;
+                        }
+                    }
+
+                    const srcIdx = touchDrag.srcIdx;
+                    cleanupDrag();
+
+                    if (srcIdx !== newIdx) {
+                        const moved = lineup.splice(srcIdx, 1)[0];
+                        lineup.splice(newIdx, 0, moved);
+                    }
+                    renderLineup();
+                });
+
+                slot.addEventListener('pointercancel', () => {
+                    cleanupDrag();
+                    renderLineup();
                 });
 
                 const order = document.createElement('span');
                 order.className = 'lineup-slot-order';
                 order.textContent = i + 1;
+
+                // Drag grip icon for visual affordance
+                const grip = document.createElement('span');
+                grip.className = 'lineup-slot-grip';
+                grip.textContent = '\u2261'; // ≡ hamburger icon
 
                 // Show # from roster
                 const numSpan = document.createElement('span');
@@ -332,6 +450,7 @@
                 });
 
                 slot.appendChild(order);
+                slot.appendChild(grip);
                 slot.appendChild(numSpan);
                 slot.appendChild(nameSpan);
                 slot.appendChild(posInput);
