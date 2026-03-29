@@ -3390,15 +3390,6 @@ body.scorebook-zoomed {
     -moz-transform-origin: 0 0;
 }
 
-/* When zoomed, all cells should scroll freely except the active one */
-body.scorebook-zoomed .cell-inning {
-    touch-action: pan-x pan-y;
-}
-
-body.scorebook-zoomed .cell-inning.cell-active {
-    touch-action: none;
-}
-
 .zoom-toggle-btn {
     display: none;                     /* hidden on desktop, shown via media query */
     position: fixed;
