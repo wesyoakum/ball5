@@ -3375,30 +3375,13 @@ body:has(.modal-overlay:not([hidden])) {
     touch-action: none;
 }
 
-/* ---- Zoom toggle: enlarged cells for mobile editing ---- */
-/* When .scorebook-zoomed is on body, cells get bigger for touch.
-   Uses real sizing (not CSS transform) so sticky columns & native scroll still work. */
-.scorebook-zoomed .cell-inning {
-    width: 140px;
-    min-height: 140px;
-}
-
-.scorebook-zoomed .cell-number {
-    width: 40px;
-}
-
-.scorebook-zoomed .cell-player {
-    width: 120px;
-}
-
-.scorebook-zoomed .cell-inning .diamond-container {
-    width: 100%;
-    height: 100%;
-}
-
-.scorebook-zoomed .cell-inning svg {
-    width: 100%;
-    height: 100%;
+/* ---- Zoom toggle for mobile editing ---- */
+/* When .scorebook-zoomed is on body, the entire scorebook scales up.
+   Uses CSS zoom (not transform) so sticky columns & native scroll still work. */
+.scorebook-zoomed .scorebook {
+    zoom: 2;
+    -moz-transform: scale(2);
+    -moz-transform-origin: 0 0;
 }
 
 .zoom-toggle-btn {
@@ -3572,15 +3555,6 @@ body:has(.modal-overlay:not([hidden])) {
         display: flex;
     }
 
-    /* Zoomed sticky column offsets */
-    .scorebook-zoomed .cell-player {
-        left: 40px;
-    }
-
-    .scorebook-zoomed .cell-pos {
-        left: 160px;
-    }
-
     /* Scroll shadow hint on grid */
     .team-section {
         position: relative;
@@ -3667,25 +3641,6 @@ body:has(.modal-overlay:not([hidden])) {
 
     .cell-pos {
         left: 132px;
-    }
-
-    /* Zoomed overrides for phone */
-    .scorebook-zoomed .cell-inning {
-        width: 140px;
-        min-height: 140px;
-    }
-
-    .scorebook-zoomed .cell-number {
-        width: 36px;
-    }
-
-    .scorebook-zoomed .cell-player {
-        width: 110px;
-        left: 36px;
-    }
-
-    .scorebook-zoomed .cell-pos {
-        left: 146px;
     }
 
     /* Base advance & quick-out popups: center on screen */
