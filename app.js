@@ -2723,8 +2723,9 @@
     });
 
     // ---- Floating zoom toggle for mobile scorebook ----
-    // Toggles a CSS class that enlarges grid cells for easier touch interaction.
-    // Uses real sizing (not CSS transform) so sticky columns and native scroll still work.
+    // If a cell is selected: zooms into that cell specifically.
+    // If no cell selected: toggles full scorebook zoom.
+    // Uses CSS zoom so sticky columns & native scroll still work.
     function initMobileZoom() {
         const btn = document.createElement('button');
         btn.className = 'zoom-toggle-btn';
@@ -2734,14 +2735,34 @@
 
         let zoomed = false;
 
+        function zoomIn() {
+            zoomed = true;
+            document.body.classList.add('scorebook-zoomed');
+            btn.classList.add('zoom-toggle-active');
+            btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+        }
+
+        function zoomOut() {
+            zoomed = false;
+            document.body.classList.remove('scorebook-zoomed');
+            btn.classList.remove('zoom-toggle-active');
+            btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+        }
+
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            zoomed = !zoomed;
-            document.body.classList.toggle('scorebook-zoomed', zoomed);
-            btn.classList.toggle('zoom-toggle-active', zoomed);
-            btn.innerHTML = zoomed
-                ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>'
-                : '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+            if (zoomed) {
+                zoomOut();
+            } else {
+                zoomIn();
+                // If a cell is selected, scroll it into view after zoom
+                if (activeCell) {
+                    // Small delay so the CSS zoom takes effect before scrolling
+                    requestAnimationFrame(() => {
+                        activeCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                    });
+                }
+            }
         });
     }
 
