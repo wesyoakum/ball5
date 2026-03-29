@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #8b1a5a;
+    --header-bg: #1a5a8b;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -178,6 +178,7 @@ body {
 .grid-player-row {
     display: flex;
     border-bottom: 1px solid var(--grid-line);
+    width: fit-content;
 }
 
 .grid-header-row {
@@ -3622,21 +3623,6 @@ body.scorebook-zoomed .cell-inning.cell-active {
     .modal-diamond-preview .diamond-container {
         width: 180px;
         height: 180px;
-    }
-
-    /* Scorebook grid: smaller cells */
-    .cell-inning {
-        width: 64px;
-        min-height: 64px;
-    }
-
-    .cell-player {
-        width: 100px;
-        left: 32px;
-    }
-
-    .cell-number {
-        width: 32px;
     }
 
     .cell-pos {
