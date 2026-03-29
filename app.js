@@ -433,8 +433,14 @@
                 (function(cell, team, pIdx, inning) {
                     let dragState = null;
                     let suppressClick = false;
+                    let touchStartPos = null;
 
                     cell.addEventListener('pointerdown', (e) => {
+                        // Track touch start position for tap detection
+                        if (e.pointerType === 'touch') {
+                            touchStartPos = { x: e.clientX, y: e.clientY };
+                        }
+
                         // On touch, only handle drag if this cell is active
                         if (e.pointerType === 'touch' && activeCell !== cell) return;
 
@@ -503,15 +509,25 @@
                         dragState = null;
                     });
 
-                    cell.addEventListener('click', (e) => {
-                        if (suppressClick) { suppressClick = false; return; }
-
-                        // Touch two-tap: first tap selects, second tap acts
-                        if ('ontouchstart' in window && activeCell !== cell) {
-                            e.stopPropagation();
-                            setActiveCell(cell);
+                    cell.addEventListener('pointerup', (e) => {
+                        // Touch two-tap: detect true taps (no movement) to select cell
+                        if (e.pointerType === 'touch' && activeCell !== cell && touchStartPos) {
+                            const dx = e.clientX - touchStartPos.x;
+                            const dy = e.clientY - touchStartPos.y;
+                            touchStartPos = null;
+                            // Only select cell if finger didn't move (true tap, not scroll)
+                            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+                                e.stopPropagation();
+                                setActiveCell(cell);
+                                suppressClick = true;
+                            }
                             return;
                         }
+                        touchStartPos = null;
+                    });
+
+                    cell.addEventListener('click', (e) => {
+                        if (suppressClick) { suppressClick = false; return; }
 
                         const target = e.target;
                         if (target.tagName === 'text' && target.hasAttribute('data-quick-result')) {
