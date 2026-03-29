@@ -2713,6 +2713,7 @@ body {
     position: relative;
     top: 8px;
     z-index: 101;
+    cursor: pointer;
 }
 
 .site-nav-links {
@@ -3392,10 +3393,10 @@ body:has(.modal-overlay:not([hidden])) {
 
 .zoom-toggle-btn {
     display: none;                     /* hidden on desktop, shown via media query */
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    z-index: 100;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 500;
     width: 44px;
     height: 44px;
     border-radius: 50%;

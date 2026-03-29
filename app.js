@@ -2688,105 +2688,108 @@
     });
 
     // ---- Floating zoom toggle for mobile scorebook ----
-    // Single button: tap to zoom in to editing level, tap again to zoom out.
+    // Single fixed button: tap to zoom in to editing level, tap again to zoom out.
     // When zoomed, single finger pans around the sheet.
-    function initZoomable(section) {
-        const grid = section.querySelector('.scorebook-grid');
-        if (!grid) return;
+    function initMobileZoom() {
+        const sections = document.querySelectorAll('.team-section');
+        const grids = [];
 
-        // Wrap grid content for transform
-        const wrapper = document.createElement('div');
-        wrapper.className = 'zoom-content';
-        while (grid.firstChild) wrapper.appendChild(grid.firstChild);
-        grid.appendChild(wrapper);
-        grid.classList.add('zoom-viewport');
+        sections.forEach(section => {
+            const grid = section.querySelector('.scorebook-grid');
+            if (!grid) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'zoom-content';
+            while (grid.firstChild) wrapper.appendChild(grid.firstChild);
+            grid.appendChild(wrapper);
+            grid.classList.add('zoom-viewport');
+
+            grids.push({ section, grid, wrapper, scale: 1, panX: 0, panY: 0, panStart: null });
+        });
+
+        if (!grids.length) return;
 
         const ZOOM_SCALE = 2.5;
-        let scale = 1;
-        let panX = 0, panY = 0;
 
-        // Pan state
-        let panStart = null;
-
-        // Floating zoom button
+        // Single fixed button on the page
         const btn = document.createElement('button');
         btn.className = 'zoom-toggle-btn';
-        btn.textContent = '\uD83D\uDD0D'; // magnifying glass
+        btn.textContent = '\uD83D\uDD0D';
         btn.setAttribute('aria-label', 'Toggle zoom');
-        section.style.position = 'relative';
-        section.appendChild(btn);
+        document.body.appendChild(btn);
 
-        function clampPan() {
-            if (scale <= 1) { panX = 0; panY = 0; return; }
-            const rect = grid.getBoundingClientRect();
-            const contentW = wrapper.scrollWidth * scale;
-            const contentH = wrapper.scrollHeight * scale;
+        let zoomed = false;
+
+        function clampPan(g) {
+            if (g.scale <= 1) { g.panX = 0; g.panY = 0; return; }
+            const rect = g.grid.getBoundingClientRect();
+            const contentW = g.wrapper.scrollWidth * g.scale;
+            const contentH = g.wrapper.scrollHeight * g.scale;
             const maxPanX = Math.max(0, contentW - rect.width);
             const maxPanY = Math.max(0, contentH - rect.height);
-            panX = Math.max(-maxPanX, Math.min(0, panX));
-            panY = Math.max(-maxPanY, Math.min(0, panY));
+            g.panX = Math.max(-maxPanX, Math.min(0, g.panX));
+            g.panY = Math.max(-maxPanY, Math.min(0, g.panY));
         }
 
-        function applyTransform() {
-            if (scale <= 1) {
-                wrapper.style.transform = '';
-                grid.classList.remove('zoom-active');
-                btn.textContent = '\uD83D\uDD0D';
-                btn.classList.remove('zoom-toggle-active');
+        function applyTransform(g) {
+            if (g.scale <= 1) {
+                g.wrapper.style.transform = '';
+                g.grid.classList.remove('zoom-active');
             } else {
-                wrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-                grid.classList.add('zoom-active');
-                btn.textContent = '\uD83D\uDD0D';
-                btn.classList.add('zoom-toggle-active');
+                g.wrapper.style.transform = `translate(${g.panX}px, ${g.panY}px) scale(${g.scale})`;
+                g.grid.classList.add('zoom-active');
             }
         }
 
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (scale > 1) {
-                // Zoom out
-                scale = 1; panX = 0; panY = 0;
-            } else {
-                // Zoom in — center roughly on the visible area
-                scale = ZOOM_SCALE;
-                // Pan to center the current scroll position
-                const gridRect = grid.getBoundingClientRect();
-                panX = -(wrapper.scrollWidth * scale - gridRect.width) / 3;
-                panY = 0;
-                clampPan();
-            }
-            applyTransform();
+            zoomed = !zoomed;
+            grids.forEach(g => {
+                if (zoomed) {
+                    g.scale = ZOOM_SCALE;
+                    const gridRect = g.grid.getBoundingClientRect();
+                    g.panX = -(g.wrapper.scrollWidth * g.scale - gridRect.width) / 3;
+                    g.panY = 0;
+                    clampPan(g);
+                } else {
+                    g.scale = 1; g.panX = 0; g.panY = 0;
+                }
+                applyTransform(g);
+            });
+            btn.classList.toggle('zoom-toggle-active', zoomed);
         });
 
         // Single-finger pan when zoomed
-        grid.addEventListener('touchstart', (e) => {
-            if (scale <= 1) return; // let normal scroll happen
-            if (e.touches.length === 1) {
-                panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY };
-                e.preventDefault();
-            }
-        }, { passive: false });
+        grids.forEach(g => {
+            g.grid.addEventListener('touchstart', (e) => {
+                if (g.scale <= 1) return;
+                if (e.touches.length === 1) {
+                    g.panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: g.panX, panY: g.panY };
+                    e.preventDefault();
+                }
+            }, { passive: false });
 
-        grid.addEventListener('touchmove', (e) => {
-            if (scale <= 1 || !panStart) return;
-            if (e.touches.length === 1) {
-                const t = e.touches[0];
-                panX = panStart.panX + (t.clientX - panStart.x);
-                panY = panStart.panY + (t.clientY - panStart.y);
-                clampPan();
-                applyTransform();
-                e.preventDefault();
-            }
-        }, { passive: false });
+            g.grid.addEventListener('touchmove', (e) => {
+                if (g.scale <= 1 || !g.panStart) return;
+                if (e.touches.length === 1) {
+                    const t = e.touches[0];
+                    g.panX = g.panStart.panX + (t.clientX - g.panStart.x);
+                    g.panY = g.panStart.panY + (t.clientY - g.panStart.y);
+                    clampPan(g);
+                    applyTransform(g);
+                    e.preventDefault();
+                }
+            }, { passive: false });
 
-        grid.addEventListener('touchend', () => {
-            panStart = null;
+            g.grid.addEventListener('touchend', () => {
+                g.panStart = null;
+            });
         });
     }
 
-    // Apply zoom to both team sections on touch-capable devices
+    // Apply zoom on touch-capable devices
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-        document.querySelectorAll('.team-section').forEach(initZoomable);
+        initMobileZoom();
     }
 
     // ---- Render default game immediately (before async storage) ----
