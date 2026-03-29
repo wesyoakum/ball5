@@ -279,6 +279,7 @@
     // First tap selects a cell (makes it editable), second tap opens modal.
     // Non-active cells allow scrolling; only active cell captures touch for drag.
     let activeCell = null;
+    let zoomBtn = null; // set by initMobileZoom
 
     function setActiveCell(cell) {
         if (activeCell && activeCell !== cell) {
@@ -286,6 +287,7 @@
         }
         activeCell = cell;
         if (cell) cell.classList.add('cell-active');
+        if (zoomBtn) zoomBtn.classList.toggle('zoom-toggle-visible', !!cell);
     }
 
     function clearActiveCell() {
@@ -293,6 +295,7 @@
             activeCell.classList.remove('cell-active');
             activeCell = null;
         }
+        if (zoomBtn) zoomBtn.classList.remove('zoom-toggle-visible');
     }
 
     // Tapping outside any cell clears the selection
@@ -2732,6 +2735,7 @@
         btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
         btn.setAttribute('aria-label', 'Toggle zoom');
         document.body.appendChild(btn);
+        zoomBtn = btn; // store reference for setActiveCell/clearActiveCell
 
         let zoomed = false;
 

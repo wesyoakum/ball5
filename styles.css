@@ -3529,8 +3529,9 @@ body:has(.modal-overlay:not([hidden])) {
         padding: 8px 6px;
     }
 
-    /* Show zoom toggle on touch-capable screens */
-    .zoom-toggle-btn {
+    /* Show zoom toggle only when a cell is selected (or zoomed in) */
+    .zoom-toggle-btn.zoom-toggle-visible,
+    .zoom-toggle-btn.zoom-toggle-active {
         display: flex;
     }
 
