@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #3a5a3a;
+    --header-bg: #5a3a6a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3375,20 +3375,13 @@ body:has(.modal-overlay:not([hidden])) {
     touch-action: none;
 }
 
-/* ---- Zoom viewport & floating toggle ---- */
-.zoom-viewport {
-    position: relative;
-}
-
-.zoom-viewport.zoom-active {
-    overflow: hidden;
-}
-
-.zoom-content {
-    transform-origin: 0 0;
-    will-change: transform;
-    display: flex;
-    flex-direction: column;
+/* ---- Zoom toggle for mobile editing ---- */
+/* When .scorebook-zoomed is on body, the entire scorebook scales up.
+   Uses CSS zoom (not transform) so sticky columns & native scroll still work. */
+.scorebook-zoomed .scorebook {
+    zoom: 2;
+    -moz-transform: scale(2);
+    -moz-transform-origin: 0 0;
 }
 
 .zoom-toggle-btn {
