@@ -2714,7 +2714,7 @@
         // Single fixed button on the page
         const btn = document.createElement('button');
         btn.className = 'zoom-toggle-btn';
-        btn.textContent = '\uD83D\uDD0D';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
         btn.setAttribute('aria-label', 'Toggle zoom');
         document.body.appendChild(btn);
 
@@ -2757,6 +2757,11 @@
                 applyTransform(g);
             });
             btn.classList.toggle('zoom-toggle-active', zoomed);
+            if (zoomed) {
+                btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+            } else {
+                btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="10" cy="10" r="6"/><line x1="10" y1="7" x2="10" y2="13"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="14.5" y1="14.5" x2="20" y2="20"/></svg>';
+            }
         });
 
         // Single-finger pan when zoomed
