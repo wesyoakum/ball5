@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #5a3a6a;
+    --header-bg: #6a4a2a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3398,6 +3398,18 @@ body.scorebook-zoomed {
 body.scorebook-zoomed .site-nav {
     zoom: 0.2;                         /* 5 * 0.2 = 1.0 effective */
     width: 500%;
+}
+
+/* Keep modals and popups at normal size when zoomed */
+body.scorebook-zoomed .modal-overlay {
+    zoom: 0.2;
+    width: 500%;
+    height: 500%;
+}
+
+body.scorebook-zoomed .base-advance-popup,
+body.scorebook-zoomed .quick-out-popup {
+    zoom: 0.2;
 }
 
 /* When zoomed, all cells should scroll freely except the active one */

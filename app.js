@@ -1260,9 +1260,10 @@
 
         const popup = baseAdvPopup;
         popup.hidden = false;
-        const px = event.clientX + 8;
-        const py = event.clientY - 40;
-        popup.style.left = Math.min(px, window.innerWidth - 200) + 'px';
+        const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
+        const px = (event.clientX + 8) * zoom;
+        const py = (event.clientY - 40) * zoom;
+        popup.style.left = Math.min(px, window.innerWidth * zoom - 200) + 'px';
         popup.style.top = Math.max(py, 4) + 'px';
     }
 
@@ -1293,9 +1294,10 @@
         quickOutPopup.querySelectorAll('.quick-out-btn').forEach(b => b.classList.remove('active'));
 
         quickOutPopup.hidden = false;
-        const px = event.clientX + 8;
-        const py = event.clientY - 40;
-        quickOutPopup.style.left = Math.min(px, window.innerWidth - 200) + 'px';
+        const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
+        const px = (event.clientX + 8) * zoom;
+        const py = (event.clientY - 40) * zoom;
+        quickOutPopup.style.left = Math.min(px, window.innerWidth * zoom - 200) + 'px';
         quickOutPopup.style.top = Math.max(py, 4) + 'px';
     }
 
