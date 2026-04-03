@@ -741,6 +741,16 @@
 
     // ---- Full re-render ----
     function renderAll() {
+        // Save active cell identity so we can restore it after re-render
+        let activeCellId = null;
+        if (activeCell) {
+            activeCellId = {
+                team: activeCell.dataset.team,
+                playerIdx: activeCell.dataset.playerIdx,
+                inn: activeCell.dataset.inn
+            };
+        }
+
         awayTeamName.value = game.awayTeam.name;
         homeTeamName.value = game.homeTeam.name;
 
@@ -761,6 +771,21 @@
         // Populate roster datalists for player name dropdowns
         populateRosterDatalist('away', game.awayTeam.name);
         populateRosterDatalist('home', game.homeTeam.name);
+
+        // Restore active cell after re-render
+        if (activeCellId) {
+            const restored = document.querySelector(
+                `.cell-inning[data-team="${activeCellId.team}"][data-player-idx="${activeCellId.playerIdx}"][data-inn="${activeCellId.inn}"]`
+            );
+            if (restored) {
+                activeCell = restored;
+                restored.classList.add('cell-active');
+                attachDragHandlers(restored);
+                if (document.body.classList.contains('scorebook-zoomed')) {
+                    setTimeout(() => restored.scrollIntoView({ block: 'center', inline: 'center' }), 50);
+                }
+            }
+        }
     }
 
     /**
