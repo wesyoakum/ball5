@@ -384,17 +384,29 @@
         if (cell) {
             cell.classList.add('cell-active');
             attachDragHandlers(cell);
+            // Auto-zoom on mobile when selecting a cell
+            if ('ontouchstart' in window && zoomBtn && !document.body.classList.contains('scorebook-zoomed')) {
+                zoomBtn.click();
+            }
         }
         if (zoomBtn) zoomBtn.classList.toggle('zoom-toggle-visible', !!cell);
     }
 
+    let _clearingActive = false;
     function clearActiveCell() {
+        if (_clearingActive) return;
+        _clearingActive = true;
         if (activeCell) {
             activeCell.classList.remove('cell-active');
             detachDragHandlers();
             activeCell = null;
         }
         if (zoomBtn) zoomBtn.classList.remove('zoom-toggle-visible');
+        // Auto-unzoom on mobile when clearing selection
+        if ('ontouchstart' in window && document.body.classList.contains('scorebook-zoomed') && zoomBtn) {
+            zoomBtn.click();
+        }
+        _clearingActive = false;
     }
 
     // Tapping outside any cell clears the selection

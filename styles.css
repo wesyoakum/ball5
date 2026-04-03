@@ -3409,6 +3409,8 @@ body.scorebook-zoomed .cell-inning {
 
 body.scorebook-zoomed .cell-inning.cell-active {
     touch-action: none;
+    outline: 4px solid #6b1a3a;         /* dark maroon border when zoomed */
+    outline-offset: -4px;
 }
 
 .zoom-toggle-btn {
