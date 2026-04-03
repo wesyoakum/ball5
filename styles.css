@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #6a4a2a;
+    --header-bg: #2a5a5a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3410,6 +3410,85 @@ body.scorebook-zoomed .modal-overlay {
 body.scorebook-zoomed .base-advance-popup,
 body.scorebook-zoomed .quick-out-popup {
     zoom: 0.2;
+    left: 0 !important;
+    top: auto !important;
+    bottom: 0;
+    transform: none;
+    width: 500%;
+    max-width: 500%;
+    max-height: 500vh;
+    border-radius: 12px 12px 0 0;
+    padding: 16px 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+body.scorebook-zoomed .base-advance-options {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+body.scorebook-zoomed .base-adv-btn {
+    padding: 12px 8px;
+    font-size: 18px;
+}
+
+body.scorebook-zoomed .base-adv-btn span {
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+body.scorebook-zoomed .base-advance-title {
+    font-size: 18px;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+body.scorebook-zoomed .base-adv-section-label {
+    font-size: 12px;
+}
+
+body.scorebook-zoomed .base-adv-cancel {
+    font-size: 16px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+body.scorebook-zoomed .quick-out-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+body.scorebook-zoomed .quick-out-btn {
+    padding: 12px 8px;
+    font-size: 18px;
+}
+
+body.scorebook-zoomed .quick-out-title {
+    font-size: 18px;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+body.scorebook-zoomed .quick-out-fielder-grid {
+    gap: 8px;
+}
+
+body.scorebook-zoomed .quick-out-pos-btn {
+    padding: 10px 4px;
+    font-size: 16px;
+}
+
+body.scorebook-zoomed .quick-out-section-label {
+    font-size: 12px;
+    margin: 8px 0 4px;
+}
+
+body.scorebook-zoomed .quick-out-cancel {
+    font-size: 16px;
+    padding: 10px;
+    margin-top: 10px;
 }
 
 /* When zoomed, all cells should scroll freely except the active one */
