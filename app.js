@@ -1263,10 +1263,13 @@
         const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
         if (zoom > 1) {
             // Bottom sheet mode when zoomed
+            // popup has zoom:0.2, so its CSS px = visual px * zoom
+            const vpW = (window.visualViewport ? window.visualViewport.width : window.innerWidth) * zoom;
+            const vpH = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * zoom;
             popup.style.left = '0px';
             popup.style.top = 'auto';
-            popup.style.width = window.innerWidth + 'px';
-            popup.style.maxHeight = (window.innerHeight * 0.75) + 'px';
+            popup.style.width = vpW + 'px';
+            popup.style.maxHeight = (vpH * 0.75) + 'px';
         } else {
             const px = event.clientX + 8;
             const py = event.clientY - 40;
@@ -1306,10 +1309,12 @@
         quickOutPopup.hidden = false;
         const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
         if (zoom > 1) {
+            const vpW = (window.visualViewport ? window.visualViewport.width : window.innerWidth) * zoom;
+            const vpH = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * zoom;
             quickOutPopup.style.left = '0px';
             quickOutPopup.style.top = 'auto';
-            quickOutPopup.style.width = window.innerWidth + 'px';
-            quickOutPopup.style.maxHeight = (window.innerHeight * 0.75) + 'px';
+            quickOutPopup.style.width = vpW + 'px';
+            quickOutPopup.style.maxHeight = (vpH * 0.75) + 'px';
         } else {
             const px = event.clientX + 8;
             const py = event.clientY - 40;
