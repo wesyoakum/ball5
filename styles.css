@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #7a2a4a;
+    --header-bg: #2a4a6a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -35,7 +35,7 @@
 
 body {
     font-family: var(--font-ui);
-    background-color: red;             /* DEBUG: body */
+    background-color: #d4cbb8;
     color: var(--ink-color);
     min-height: 100vh;
 }
@@ -87,14 +87,13 @@ body {
 .scorebook {
     margin: 0 auto;
     padding: 16px;
-    background: blue !important;       /* DEBUG: .scorebook (main) */
     width: fit-content;
     min-width: 100%;
 }
 
 /* ---- Team Section ---- */
 .team-section {
-    background: green !important;      /* DEBUG: .team-section */
+    background: var(--paper-bg);
     border: 2px solid var(--grid-line-heavy);
     border-radius: 4px;
     margin-bottom: 4px;
@@ -176,7 +175,6 @@ body {
 .scorebook-grid {
     display: flex;
     flex-direction: column;
-    background: yellow !important;     /* DEBUG: .scorebook-grid */
 }
 
 .grid-header-row,
@@ -3409,7 +3407,7 @@ body.scorebook-zoomed .cell-inning {
 
 body.scorebook-zoomed .cell-inning.cell-active {
     touch-action: none;
-    outline: 4px solid #6b1a3a;         /* dark maroon border when zoomed */
+    outline: 4px solid var(--header-bg); /* highlighted border when zoomed */
     outline-offset: -4px;
 }
 
