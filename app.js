@@ -1261,10 +1261,20 @@
         const popup = baseAdvPopup;
         popup.hidden = false;
         const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
-        const px = (event.clientX + 8) * zoom;
-        const py = (event.clientY - 40) * zoom;
-        popup.style.left = Math.min(px, window.innerWidth * zoom - 200) + 'px';
-        popup.style.top = Math.max(py, 4) + 'px';
+        if (zoom > 1) {
+            // Bottom sheet mode when zoomed
+            popup.style.left = '0px';
+            popup.style.top = 'auto';
+            popup.style.width = window.innerWidth + 'px';
+            popup.style.maxHeight = (window.innerHeight * 0.75) + 'px';
+        } else {
+            const px = event.clientX + 8;
+            const py = event.clientY - 40;
+            popup.style.left = Math.min(px, window.innerWidth - 200) + 'px';
+            popup.style.top = Math.max(py, 4) + 'px';
+            popup.style.width = '';
+            popup.style.maxHeight = '';
+        }
     }
 
     function closeBaseAdvancePopup() {
@@ -1295,10 +1305,19 @@
 
         quickOutPopup.hidden = false;
         const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
-        const px = (event.clientX + 8) * zoom;
-        const py = (event.clientY - 40) * zoom;
-        quickOutPopup.style.left = Math.min(px, window.innerWidth * zoom - 200) + 'px';
-        quickOutPopup.style.top = Math.max(py, 4) + 'px';
+        if (zoom > 1) {
+            quickOutPopup.style.left = '0px';
+            quickOutPopup.style.top = 'auto';
+            quickOutPopup.style.width = window.innerWidth + 'px';
+            quickOutPopup.style.maxHeight = (window.innerHeight * 0.75) + 'px';
+        } else {
+            const px = event.clientX + 8;
+            const py = event.clientY - 40;
+            quickOutPopup.style.left = Math.min(px, window.innerWidth - 200) + 'px';
+            quickOutPopup.style.top = Math.max(py, 4) + 'px';
+            quickOutPopup.style.width = '';
+            quickOutPopup.style.maxHeight = '';
+        }
     }
 
     function closeQuickOutPopup() {

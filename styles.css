@@ -18,7 +18,7 @@
     --walk-color: #2a4a8a;
     --out-color: #8a2a2a;
     --special-color: #6a5a2a;
-    --header-bg: #2a5a5a;
+    --header-bg: #5a2a2a;
     --header-text: #f0ece0;
     --modal-bg: #faf6ec;
     --btn-hover: #e8e0cc;
@@ -3414,17 +3414,16 @@ body.scorebook-zoomed .quick-out-popup {
     top: auto !important;
     bottom: 0;
     transform: none;
-    width: 500%;
-    max-width: 500%;
-    max-height: 500vh;
     border-radius: 12px 12px 0 0;
     padding: 16px 20px;
     box-sizing: border-box;
     overflow-y: auto;
+    /* Width set via JS: window.innerWidth + 'px' */
 }
 
 body.scorebook-zoomed .base-advance-options {
-    grid-template-columns: 1fr 1fr 1fr;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
 }
 
