@@ -303,8 +303,10 @@
             e.preventDefault();
             cell.setPointerCapture(e.pointerId);
             const rect = svg.getBoundingClientRect();
-            const vbX = (e.clientX - rect.left) * (64 / rect.width);
-            const vbY = (e.clientY - rect.top) * (64 / rect.height);
+            // CSS zoom scales getBoundingClientRect but not clientX/clientY
+            const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
+            const vbX = (e.clientX * zoom - rect.left) * (64 / rect.width);
+            const vbY = (e.clientY * zoom - rect.top) * (64 / rect.height);
             activeDragState = { startX: e.clientX, startY: e.clientY, vbX, vbY, dragged: false };
         }
 
@@ -2809,19 +2811,7 @@
                 // If a cell is selected, scroll it into view after zoom renders
                 if (activeCell) {
                     setTimeout(() => {
-                        const zoomLevel = 5;
-                        const rect = activeCell.getBoundingClientRect();
-                        // getBoundingClientRect returns zoomed coords, so divide by zoom for true page position
-                        const cellTop = (window.scrollY + rect.top) / zoomLevel;
-                        const cellLeft = (window.scrollX + rect.left) / zoomLevel;
-                        const cellW = rect.width / zoomLevel;
-                        const cellH = rect.height / zoomLevel;
-                        // Scroll so cell is centered in viewport (viewport is also shrunk by zoom)
-                        const vpW = window.innerWidth / zoomLevel;
-                        const vpH = window.innerHeight / zoomLevel;
-                        const scrollX = (cellLeft + cellW / 2) - vpW / 2;
-                        const scrollY = (cellTop + cellH / 2) - vpH / 2;
-                        window.scrollTo({ left: scrollX, top: scrollY, behavior: 'smooth' });
+                        activeCell.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
                     }, 100);
                 }
             }
